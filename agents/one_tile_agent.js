@@ -6,8 +6,8 @@ import { type } from "os";
 
 // SIUMM token for azure server
 const client = new DeliverooApi(
-    // 'http://localhost:8080',
-    'https://deliveroojs25.azurewebsites.net/',
+    'http://localhost:8080',
+    // 'https://deliveroojs25.azurewebsites.net/',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjBmNjE0MiIsIm5hbWUiOiJTSVVNTU0iLCJyb2xlIjoidXNlciIsImlhdCI6MTc0NDExNjg5Nn0.GRbwcATIX9j92vkmedyiVsm1s3Mez93YZiQcWkPHLQU'
 )
 
@@ -37,9 +37,19 @@ client.onParcelsSensing( (parcels) => {
         console.log("parcel ", index,": ", parcel);
         let x = parcel.x;
         let y = parcel.y;
-        if(agent.x - x < 2 && agent.y - y < 2){
+        
             //move towards the parcel
             console.log("moving towards: ",parcel.id, " x: ", parcel.x," y: ", parcel.y);
-        }
+            //move to the parcel
+            // if is negative i'll move to the right otherwise left
+            const moves = ["up", "down", "left", "right"];
+            client.emitMove(moves[Math.random]).then((result) => {
+                if (result) {
+                    console.log("moved to: ", parcel.id, " x: ", parcel.x," y: ", parcel.y);
+                } else {
+                    console.log("can't move to: ", parcel.id, " x: ", parcel.x," y: ", parcel.y);
+                }
+            }
+        
     });
 })
