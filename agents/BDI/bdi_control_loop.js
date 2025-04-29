@@ -50,6 +50,7 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
 let accessible_tiles = [];
 client.onMap((width, height, tiles) => {
     accessible_tiles = removeWalls(tiles);
+    // console.log(accessible_tiles)
 })
 
 function checkAvailable(x,y){
@@ -282,30 +283,28 @@ class BlindMove extends Plan {
         while ( me.x != x || me.y != y ) {
             const dx = x - me.x;
             const dy = y - me.y;
-            
-
             if( dx != 0){
                 if(dx > 0){
-                    if(accessible_tiles.filter(elem => {elem.y == me.y && elem.x == me.x + 1}) == [])
-                        await client.emitMove("right").catch((err) => console.log("cannot go right"))
+                    if(accessible_tiles.filter(elem => { return elem.y == me.y && elem.x == me.x + 1}).length != 0)
+                        await client.emitMove("right");
                     else
                         await randomPossibleMove(me.x,me.y)
                 } else {
-                    if(accessible_tiles.filter(elem => {elem.y == me.y && elem.x == me.x - 1}) == [])
-                        await client.emitMove("left").catch((err) => console.log("cannot go left"))
+                    if(accessible_tiles.filter(elem => { return elem.y == me.y && elem.x == me.x - 1}).length != 0)
+                        await client.emitMove("left");
                     else
                         await randomPossibleMove(me.x,me.y)
                 }
             }
             if( dy != 0){
                 if(dy > 0){
-                    if(accessible_tiles.filter(elem => {elem.y == me.y + 1 && elem.x == me.x}) == [])
-                        await client.emitMove("up").catch((err) => console.log("cannot go up"))
+                    if(accessible_tiles.filter(elem => { return elem.y == me.y + 1 && elem.x == me.x}).length != 0)
+                        await client.emitMove("up");
                     else
                         await randomPossibleMove(me.x,me.y)
                 } else {
-                    if(accessible_tiles.filter(elem => {elem.y == me.y - 1 && elem.x == me.x}) == [])
-                        await client.emitMove("down").catch((err) => console.log("cannot go down"))
+                    if(accessible_tiles.filter(elem => { return elem.y == me.y - 1 && elem.x == me.x}).length != 0)
+                        await client.emitMove("down");
                     else
                         await randomPossibleMove(me.x,me.y)
                 }
