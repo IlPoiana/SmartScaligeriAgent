@@ -1,5 +1,5 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
-
+import { BFS,DFS } from "../lib/algorithms.js"
 
 const client = new DeliverooApi(
     // 'https://deliveroojs.onrender.com',
@@ -281,6 +281,7 @@ class BlindMove extends Plan {
 
     async execute ( {x, y} ) {
         while ( me.x != x || me.y != y ) {
+
             const dx = x - me.x;
             const dy = y - me.y;
             if( dx != 0){

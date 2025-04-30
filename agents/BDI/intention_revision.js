@@ -1,5 +1,5 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
-import { DFS } from "../lib/algorithms.js"
+import { DFS,BFS } from "../lib/algorithms.js"
 
 const behavior = 1;
 
@@ -408,28 +408,30 @@ class BlindMove extends Plan {
     //CHANGE, missing the smarter usage of the generated path
     async execute ( go_to, x, y ) {
         // console.log(`starting DFS: ${[me.x,me.y]} ${[x,y]}`);
-        let path = DFS([me.x,me.y], [x,y], accessible_tiles)
-        console.log("finished DFS", path);
-        const next_tile = path[1];
+        let path = BFS([me.x,me.y], [x,y], accessible_tiles)
+        console.log("finished BFS", path);
+        for ( let i = 0; i < path.length; i++ ) {
+            const next_tile = path[i];
 
-        const dx = next_tile.x - me.x;
-        const dy = next_tile.y - me.y;
-        
-        console.log("moving");
-        if( dx != 0){
-            if(dx > 0){
-                await client.emitMove("right").catch((err) => console.log("cannot go right"))
-            } else {
-                await client.emitMove("left").catch((err) => console.log("cannot go left"))
+            const dx = next_tile.x - me.x;
+            const dy = next_tile.y - me.y;
+            
+            if( dx != 0){
+                if(dx > 0){
+                    await client.emitMove("right").catch((err) => console.log("cannot go right"))
+                } else {
+                    await client.emitMove("left").catch((err) => console.log("cannot go left"))
+                }
+            }
+            if( dy != 0){
+                if(dy > 0){
+                    await client.emitMove("up").catch((err) => console.log("cannot go up"))
+                } else {
+                    await client.emitMove("down").catch((err) => console.log("cannot go down"))
+                }
             }
         }
-        if( dy != 0){
-            if(dy > 0){
-                await client.emitMove("up").catch((err) => console.log("cannot go up"))
-            } else {
-                await client.emitMove("down").catch((err) => console.log("cannot go down"))
-            }
-        }
+            
     }
 }
 
