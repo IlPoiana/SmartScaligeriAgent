@@ -478,6 +478,8 @@ class GoPickUp extends Plan {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             await client.emitPickup()
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
+            await this.subIntention( ['delivery']);
+        if ( this.stopped ) throw ['stopped']; // if stopped then quit
             return true;
     }
 
