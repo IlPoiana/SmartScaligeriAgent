@@ -28,6 +28,35 @@ function removeWalls(tiles){
     return available;
 }
 
+function printBeliefSet() {
+    console.log("=== Belief Set ===");
+    console.log(`📍 Agente: ${me.name} (ID: ${me.id})`);
+    console.log(`   Posizione: (${me.x}, ${me.y})`);
+    console.log(`   Punteggio: ${me.score}`);
+    console.log("");
+
+    console.log("📦 Parcels percepiti:");
+    for (const [id, parcel] of parcels.entries()) {
+        const status = parcel.carriedBy ? `Carried by ${parcel.carriedBy}` : "Disponibile";
+        console.log(`   - ID: ${id}, Posizione: (${parcel.x}, ${parcel.y}), Punteggio: ${parcel.reward}, Stato: ${status}`);
+    }
+    console.log("");
+
+    console.log("📬 Zone di consegna:");
+    const deliveryZones = accessible_tiles.filter(tile => tile.type === 2);
+    for (const tile of deliveryZones) {
+        console.log(`   - Posizione: (${tile.x}, ${tile.y})`);
+    }
+    console.log("");
+
+    console.log("🧱 Blocchi (muri):");
+    const walls = accessible_tiles.filter(tile => tile.type === 0);
+    for (const tile of walls) {
+        console.log(`   - Posizione: (${tile.x}, ${tile.y})`);
+    }
+    console.log("===================");
+}
+
 /**
  * Belief revision function
  */
@@ -45,6 +74,8 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
     for (const p of perceived_parcels) {
         parcels.set( p.id, p)
     }
+
+    printBeliefSet();
 } )
 
 let accessible_tiles = [];
@@ -119,6 +150,7 @@ function agentLoop() {
 
 }
 client.onParcelsSensing( agentLoop )
+
 // client.onAgentsSensing( agentLoop )
 client.onYou( agentLoop )
 
@@ -187,7 +219,8 @@ class Intention extends Promise {
     constructor ( desire, ...args ) {
         var resolve, reject;
         super( async (res, rej) => {
-            resolve = res; reject = rej;
+            resolve = res; 
+            reject = rej;
         } )
         this.#resolve = resolve
         this.#reject = reject
@@ -297,6 +330,8 @@ class BlindMove extends Plan {
                         await randomPossibleMove(me.x,me.y)
                 }
             }
+
+            //change path if another parcel generates
             if( dy != 0){
                 if(dy > 0){
                     if(accessible_tiles.filter(elem => { return elem.y == me.y + 1 && elem.x == me.x}).length != 0)

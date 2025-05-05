@@ -4,6 +4,24 @@ function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     return dx + dy;
 }
 
+/**
+ * 
+ * @param {*} tiles tiles map
+ * @returns the `tiles` map without the walls
+ */
+function removeWalls(tiles){
+    var available = [];
+    tiles.forEach(elem => {
+        if(elem.type != 0)
+            available.push({
+                x: elem.x,
+                y: elem.y,
+                type: elem.type
+            })
+    });
+    return available;
+}
+
 function BFS(start,target,map){
     const x = Math.round(start[0]);
     const y = Math.round(start[1]);
@@ -185,5 +203,7 @@ function DFS(start, target, map){
 
 const _DFS = DFS;
 const _BFS = BFS;
+const _removeWalls = removeWalls    //per rimuovere i muri
 export { _DFS as DFS };
 export { _BFS as BFS };
+export { _removeWalls as removeWalls}
