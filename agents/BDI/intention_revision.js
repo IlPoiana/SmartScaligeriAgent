@@ -1,7 +1,7 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { DFS,BFS } from "../lib/algorithms.js"
 
-const behavior = 1;
+const behavior = 0;
 
 const client = new DeliverooApi(
     'http://localhost:8080',
@@ -81,32 +81,40 @@ client.onParcelsSensing( parcels => {
          * Options generation
          */
         const options = []
-        for (const parcel of parcels.values())
-            if ( ! parcel.carriedBy ) //load only the parcels not carried
-                options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id ] );
-                // myAgent.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id ] )
+        // for (const parcel of parcels.values()){
+        //     if ( ! parcel.carriedBy && 
+        //         (myAgent.intention_queue.filter((intention) => {return intention.predicate[3] == parcel.id}).length == 0)) //load only the parcels not carried and not already in the intention queue
+        //         options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id ] );
+        // }
 
+        for (const parcel of parcels.values()){
+                if ( ! parcel.carriedBy &&
+                    myAgent.intention_queue.filter(intention => {
+                        return parcel.id == intention.predicate[3]
+                    }).length == 0
+                )
+                    options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id ] );
+            }
+
+        console.log("\n ----- \nCHECK generating options", options);
         /**
          * Options filtering
          */
-        let best_option;
-        let nearest = Number.MAX_VALUE;
-        for (const option of options) {
-            if ( option[0] == 'go_pick_up' ) {
-                let [go_pick_up,x,y,id] = option;
-                let current_d = distance( {x, y}, me )
-                if ( current_d < nearest ) {
-                    best_option = option
-                    nearest = current_d
-                }
-            }
-        }
+    
+        options.sort((a,b) => {
+            let [go_pick_up_a,x_a,y_a,id_a] = a;
+            let [go_pick_up_b,x_b,y_b,id_b] = b;
+            return (distance({x:x_a,y:y_a}, me) - distance({x:x_b,y:y_b}, me));
+        })
+        console.log("CHECK 1 sorted options: ", options, "\nme: ", me);
+
+        options.forEach((option) =>  myAgent.push(option));
 
         /**
          * Best option is selected
          */
-        if ( best_option )
-            myAgent.push( best_option )
+        // for(let i = options.length - 1;i >= 0; i--)
+        //     myAgent.push(options[i]);       
     }
         
 
@@ -121,7 +129,7 @@ client.onParcelsSensing( parcels => {
  */
 class IntentionRevision {
 
-    #intention_queue = new Array();
+    #intention_queue = new Array(); 
     get intention_queue () {
         return this.#intention_queue;
     }
@@ -134,26 +142,30 @@ class IntentionRevision {
             
                 // Current intention
                 const intention = this.intention_queue[0];
-                
+
+
                 //CHANGE
                 // Is queued intention still valid? Do I still want to achieve it?
                 // TODO this hard-coded implementation is an example
-                let id = intention.predicate[2]
+
+
+
+                let id = intention.predicate[3]
                 let p = parcels.get(id)
                 if ( p && p.carriedBy ) {
                     console.log( 'Skipping intention because no more valid', intention.predicate )
+                    //CHECK 2
+                    // Remove from the queue
+                    this.intention_queue.shift();
                     continue;
                 }
+                else{
+                    //CHECK 2
+                    // Start achieving intention
+                    await intention.achieve().then(() => this.intention_queue.shift()).catch( err => console.log("something went wrong in achieving your intention: ", err));
+                }
 
-                // Start achieving intention
-                await intention.achieve()
-                // Catch eventual error and continue
-                .catch( error => {
-                    // console.log( 'Failed intention', ...intention.predicate, 'with error:', ...error )
-                } );
-
-                // Remove from the queue
-                this.intention_queue.shift();
+                
             }
             // Postpone next iteration at setImmediate
             await new Promise( res => setImmediate( res ) );
@@ -173,11 +185,13 @@ class IntentionRevisionQueue extends IntentionRevision {
     async push ( predicate ) {
         
         // Check if already queued
-        if ( this.intention_queue.find( (i) => i.predicate.join(' ') == predicate.join(' ') ) )
+        if ( this.intention_queue.find( (i) => i.predicate.join(' ') == predicate.join(' ') ) ){
+            console.log("intention ", predicate ," is already queued");
             return; // intention is already queued
+        }
+            
 
         console.log( 'IntentionRevisionReplace.push', predicate );
-        console.log("parcels", parcels);
         const intention = new Intention( this, predicate );
         this.intention_queue.push( intention );
     }
@@ -237,8 +251,7 @@ switch (behavior) {
         break;
     default:
         console.log("not a valid input passed");
-        process.exit()
-        break;
+        process.exit();
 }
 
 myAgent.loop();
@@ -314,7 +327,6 @@ class Intention {
                 this.log('achieving intention', ...this.predicate, 'with plan', planClass.name);
                 // and plan is executed and result returned
                 try {
-                    console.log("trying achieve an intention");
                     const plan_res = await this.#current_plan.execute( ...this.predicate );
                     this.log( 'succesful intention', ...this.predicate, 'with plan', planClass.name, 'with result:', plan_res );
                     return plan_res
@@ -431,7 +443,7 @@ class BlindMove extends Plan {
                 }
             }
         }
-            
+        return true;
     }
 }
 
