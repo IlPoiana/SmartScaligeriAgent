@@ -1,6 +1,7 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { DFS,BFS } from "../lib/algorithms.js"
 
+
 const behavior = 0;
 
 const client = new DeliverooApi(
@@ -45,6 +46,8 @@ client.onYou( ( {id, name, x, y, score} ) => {
 } )
 const parcels = new Map();
 var generate_options = true;
+
+// crea il belief set
 client.onParcelsSensing( async ( perceived_parcels ) => {
     let found_new = false
     
@@ -60,6 +63,7 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
         generate_options = false
 
 } )
+
 client.onConfig( (param) => {
     // console.log(param);
 } )
@@ -87,6 +91,7 @@ client.onParcelsSensing( parcels => {
         //         options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id ] );
         // }
 
+        //for every parcel that wasn't picked up and is not in my queue to pick up I'll add it
         for (const parcel of parcels.values()){
                 if ( ! parcel.carriedBy &&
                     myAgent.intention_queue.filter(intention => {
@@ -100,7 +105,8 @@ client.onParcelsSensing( parcels => {
         /**
          * Options filtering
          */
-    
+        
+        
         options.sort((a,b) => {
             let [go_pick_up_a,x_a,y_a,id_a] = a;
             let [go_pick_up_b,x_b,y_b,id_b] = b;
