@@ -1,5 +1,5 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
-import { DFS,BFS } from "../lib/algorithms.js"
+import { DFS,BFS, nearestDeliveryTile, deliveryTilesMap } from "../lib/algorithms.js"
 
 const behavior = 0;
 
@@ -65,8 +65,10 @@ client.onConfig( (param) => {
 } )
 
 let accessible_tiles = [];
+let delivery_map = [];
 client.onMap((width, height, tiles) => {
     accessible_tiles = removeWalls(tiles);
+    delivery_map = deliveryTilesMap(tiles);
     // console.log(`accessible_tiles ${accessible_tiles}`)
 })
 
@@ -407,12 +409,14 @@ class GoPickUp extends Plan {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             await client.emitPickup()
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
+            await this.subIntention( ['delivery']);
+        if ( this.stopped ) throw ['stopped']; // if stopped then quit
             return true;
     }
 
 }
 
-class BlindMove extends Plan {
+class BFSMove extends Plan {
 
     static isApplicableTo ( go_to, x, y ) {
         return go_to == 'go_to';
@@ -447,6 +451,44 @@ class BlindMove extends Plan {
     }
 }
 
+class Delivery extends Plan {
+
+    static isApplicableTo ( delivery ) {
+        return delivery == 'delivery';
+    }
+    //CHANGE, missing the smarter usage of the generated path
+    async execute ( delivery) {
+        // console.log(`starting DFS: ${[me.x,me.y]} ${[x,y]}`);
+        let path = nearestDeliveryTile(me.x,me.y, delivery_map, accessible_tiles)
+        console.log("delivery", path);
+        for ( let i = 0; i < path.length; i++ ) {
+            const next_tile = path[i];
+
+            const dx = next_tile.x - me.x;
+            const dy = next_tile.y - me.y;
+            
+            if( dx != 0){
+                if(dx > 0){
+                    await client.emitMove("right").catch((err) => console.log("cannot go right"))
+                } else {
+                    await client.emitMove("left").catch((err) => console.log("cannot go left"))
+                }
+            }
+            if( dy != 0){
+                if(dy > 0){
+                    await client.emitMove("up").catch((err) => console.log("cannot go up"))
+                } else {
+                    await client.emitMove("down").catch((err) => console.log("cannot go down"))
+                }
+            }
+        }
+        console.log("putting down");
+        await client.emitPutdown();
+        return true;
+    }
+}
+
 // plan classes are added to plan library 
 planLibrary.push( GoPickUp )
-planLibrary.push( BlindMove )
+planLibrary.push( BFSMove )
+planLibrary.push( Delivery)
