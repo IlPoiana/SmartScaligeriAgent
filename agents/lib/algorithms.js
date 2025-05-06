@@ -4,12 +4,7 @@ function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     return dx + dy;
 }
 
-/**
- * 
- * @param {*} tiles tiles map
- * @returns the `tiles` map without the walls
- */
-function removeWalls(tiles){
+const _rmwalls = function removeWalls(tiles){
     var available = [];
     tiles.forEach(elem => {
         if(elem.type != 0)
@@ -20,6 +15,41 @@ function removeWalls(tiles){
             })
     });
     return available;
+}
+
+
+
+const _rmagenttiles = function removeAgentTiles(agents,map){
+    var available = map.slice();
+    agents.forEach((agent) => {
+        available = available.filter((tile) => {
+            return tile.x != Math.round(agent.x) && tile.y != Math.round(agent.y)})
+    })
+    return available;
+}
+
+function destinationTiles(tiles){
+    var delivery = [];
+    tiles.forEach(elem => {
+        if(elem.type == 2)
+            delivery.push({
+                x: elem.x,
+                y: elem.y,
+                type: elem.type
+            })
+    });
+
+    return delivery;
+}
+
+function nearestDeliveryTile(x,y, delivery_map,map){
+    const delivery_tiles = delivery_map;
+    delivery_tiles.sort((a,b) => {
+        return distance({x:x, y:y},{x:a.x,y:a.y}) - distance({x:x, y:y},{x:b.x,y:b.y})
+    })
+    // console.log("sorted delivery: ",delivery_tiles);
+    return BFS([x,y], [delivery_tiles[0].x,delivery_tiles[0].y],map);
+
 }
 
 function BFS(start,target,map){
@@ -200,10 +230,13 @@ function DFS(start, target, map){
     return sequence;
     
 }
-
+const _tiles = destinationTiles
+const _delivery = nearestDeliveryTile
 const _DFS = DFS;
 const _BFS = BFS;
-const _removeWalls = removeWalls    //per rimuovere i muri
+export { _rmwalls as removeWalls}
+export { _rmagenttiles as removeAgentTiles}
 export { _DFS as DFS };
 export { _BFS as BFS };
-export { _removeWalls as removeWalls}
+export {_tiles as deliveryTilesMap}
+export {_delivery as nearestDeliveryTile}
