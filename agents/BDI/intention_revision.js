@@ -1,5 +1,5 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
-import { DFS,BFS, nearestDeliveryTile, deliveryTilesMap } from "../lib/algorithms.js"
+import { removeWalls,removeAgentTiles,DFS,BFS, nearestDeliveryTile, deliveryTilesMap } from "../lib/algorithms.js"
 
 const behavior = 0;
 
@@ -15,23 +15,6 @@ function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     const dy = Math.abs( Math.round(y1) - Math.round(y2) )
     return dx + dy;
 }
-
-function removeWalls(tiles){
-    var available = [];
-    tiles.forEach(elem => {
-        if(elem.type != 0)
-            available.push({
-                x: elem.x,
-                y: elem.y,
-                type: elem.type
-            })
-    });
-    return available;
-}
-
-
-
-
 /**
  * Beliefset revision function
  */
@@ -60,34 +43,43 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
         generate_options = false
 
 } )
-client.onConfig( (param) => {
-    // console.log(param);
-} )
+// client.onConfig( (param) => {
+//     // console.log(param);
+// } )
+
 
 let accessible_tiles = [];
+let original_map = []
 let delivery_map = [];
 client.onMap((width, height, tiles) => {
     accessible_tiles = removeWalls(tiles);
+    original_map = accessible_tiles.slice();
     delivery_map = deliveryTilesMap(tiles);
     // console.log(`accessible_tiles ${accessible_tiles}`)
 })
 
+const enemy_agents = new Map()
 
+function updateAgentsBeliefs(agents){
+    for(let agent of agents.values())
+        enemy_agents.set(agent.id, {x:agent.x, y:agent.y});
+    accessible_tiles = original_map.slice();
+    accessible_tiles = removeAgentTiles(agents, accessible_tiles)
+    // console.log("adversary agents: ",enemy_agents);
+    // console.log("updated tiles map: ", accessible_tiles);
+}
+
+
+client.onAgentsSensing(updateAgentsBeliefs)
 /**
  * Options generation and filtering function
  */
 client.onParcelsSensing( parcels => {
-    //CHECK
     if(generate_options){
         /**
          * Options generation
          */
         const options = []
-        // for (const parcel of parcels.values()){
-        //     if ( ! parcel.carriedBy && 
-        //         (myAgent.intention_queue.filter((intention) => {return intention.predicate[3] == parcel.id}).length == 0)) //load only the parcels not carried and not already in the intention queue
-        //         options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id ] );
-        // }
 
         for (const parcel of parcels.values()){
                 if ( ! parcel.carriedBy &&
@@ -110,18 +102,11 @@ client.onParcelsSensing( parcels => {
         })
         console.log("CHECK 1 sorted options: ", options, "\nme: ", me);
 
-        options.forEach((option) =>  myAgent.push(option));
-
-        /**
-         * Best option is selected
-         */
-        // for(let i = options.length - 1;i >= 0; i--)
-        //     myAgent.push(options[i]);       
+        options.forEach((option) =>  myAgent.push(option));      
     }
         
 
 } )
-// client.onAgentsSensing( agentLoop )
 // client.onYou( agentLoop )
 
 
