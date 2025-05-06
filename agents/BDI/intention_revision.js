@@ -2,7 +2,7 @@ import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { DFS,BFS } from "../lib/algorithms.js"
 
 
-const behavior = 0;
+const behavior = 2;
 
 const client = new DeliverooApi(
     'http://localhost:8080',
@@ -16,6 +16,38 @@ function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     const dy = Math.abs( Math.round(y1) - Math.round(y2) )
     return dx + dy;
 }
+
+// --- Funzione per ottenere i parcels ordinati per utilità (reward - distanza) ---
+function getSortedParcels() {
+    const list = [];
+    parcels.forEach(parcel => {
+      if (!parcel.carriedBy) {
+        const dist = distance(me, parcel);
+        const util = parcel.reward - dist;
+        list.push({ id: parcel.id, x: parcel.x, y: parcel.y, reward: parcel.reward, dist, util });
+      }
+    });
+    list.sort((a, b) => b.util - a.util);
+    return list;
+  }
+
+  function sortIntentin(intentions){
+
+    for(const intention of intentions){        
+        if(intention.predicate[0] == "go_pick_up"){
+            
+        }
+    }
+    intentions.sort((a,b) => b.utility - a.utility);
+    return intentions;
+  }
+
+  function parcelUtility(parcel) {
+    const dist = distance(me, parcel);
+    return parcel.reward - dist;
+  }
+
+  
 
 function removeWalls(tiles){
     var available = [];
@@ -81,15 +113,11 @@ client.onMap((width, height, tiles) => {
 client.onParcelsSensing( parcels => {
     //CHECK
     if(generate_options){
+
         /**
          * Options generation
          */
         const options = []
-        // for (const parcel of parcels.values()){
-        //     if ( ! parcel.carriedBy && 
-        //         (myAgent.intention_queue.filter((intention) => {return intention.predicate[3] == parcel.id}).length == 0)) //load only the parcels not carried and not already in the intention queue
-        //         options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id ] );
-        // }
 
         //for every parcel that wasn't picked up and is not in my queue to pick up I'll add it
         for (const parcel of parcels.values()){
@@ -98,7 +126,8 @@ client.onParcelsSensing( parcels => {
                         return parcel.id == intention.predicate[3]
                     }).length == 0
                 )
-                    options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id ] );
+                
+                    options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id] );
             }
 
         console.log("\n ----- \nCHECK generating options", options);
@@ -186,6 +215,7 @@ class IntentionRevision {
 
 }
 
+//first in first out
 class IntentionRevisionQueue extends IntentionRevision {
 
     async push ( predicate ) {
@@ -231,11 +261,56 @@ class IntentionRevisionReplace extends IntentionRevision {
 class IntentionRevisionRevise extends IntentionRevision {
     //CHANGE
     async push ( predicate ) {
-        console.log( 'Revising intention queue. Received', ...predicate );
+
+        // Check if already queued
+        const last = this.intention_queue.at( this.intention_queue.length - 1 );
+        if ( last && last.predicate.join(' ') == predicate.join(' ') ) {
+            console.log("intention already being achieved")
+            return; // intention is already being achieved
+        }
+
+        console.log( '💡 Revising intention queue. Received', ...predicate );
+        //const queue = this.intention_queue.map( i => i.predicate );
+        //console.log( '👍​ Intention queue:', queue );
+        
         // TODO
         // - order intentions based on utility function (reward - cost) (for example, parcel score minus distance)
+        for( const i of this.intention_queue ){
+            console.log("intention: ", i.predicate, " distance: ", distance({x:i.predicate[1],y:i.predicate[2]},me), " reward: ", parcels.get(i.predicate[3]).reward);
+
+        }
+
         // - eventually stop current one
         // - evaluate validity of intention
+
+        if( myAgent.predicate[0] != 'delivery')
+        {
+
+        }
+        
+            console.log( 'IntentionRevisionRevise.push', predicate );
+        const list = new Array();
+        const newIntention = new Intention( this, predicate );
+        list.push( newIntention )
+        /*for(const intetion of this.intention_queue){
+            if(intetion.predicate[0] == "go_pick_up"){
+                list.push(intetion);
+                this.intention_queue.shift();
+            }
+        }*/
+        list.sort((a,b) => {
+            let [go_pick_up_a,x_a,y_a,id_a,] = a.predicate;
+            let [go_pick_up_b,x_b,y_b,id_b] = b.predicate;
+            return (distance({x:x_a,y:y_a}, me) - distance({x:x_b,y:y_b}, me));
+        })
+
+
+        //list.sort((a,b)=>parcelUtility(a) - parcelUtility(b))
+        //list.forEach(function(entry) {
+        //    console.log("intetion: ", entry);
+        //  });
+            
+
     }
 
 }
