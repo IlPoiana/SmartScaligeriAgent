@@ -14,60 +14,29 @@ const client = new DeliverooApi(
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRiNTVlYyIsIm5hbWUiOiJBZ2VudCIsInRlYW1JZCI6IjkwZjRmNCIsInRlYW1OYW1lIjoiZGlzaSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ0MTIxOTAzfQ.8O31Xu-BwQidn2da1NfhJ_haK1GmscbzB5N_iZTXfW0'
 )
 
-let tiles_map;
-var agent = {}; 
+const eventEmitter = new EventEmitter()
 
-function availableTile(x,y,tiles){
-    // console.log("x ",x, "y ", y);
-    // console.log("tiles ", tiles)
-    let res = false;
-    tiles.forEach((element,idx) => {
-        if(element.x == x && element.y == y && element.type != 0){
-            console.log("here!")
-            res = true;
-        }
-    })
-    
-    return res 
-}
+const me = {}
+const me_ready = new Promise((resolve, reject) => {
+    eventEmitter.once('me', ()=> {resolve()});
+})
+const map_ready = new Promise((resolve, reject) => {
+    eventEmitter.once('map', ()=> {resolve()});
+})
 
-function possibleDestinations(x,y, tiles){
-    var dest= [];
+Promise.all([me_ready,map_ready]).then(() => console.log(me));
 
-    if (availableTile(x, y + 1, tiles))
-        dest.push("up");
-    if (availableTile(x, y - 1, tiles))
-        dest.push("down");
-    if (availableTile(x - 1, y, tiles))
-        dest.push("left");
-    if (availableTile(x + 1, y, tiles))
-        dest.push("right");
+setTimeout(() => {console.log("waiting")}, 1000);
 
-    return dest;
-}
-
-client.onMap( (x,y,tiles) => {
-    // console.log('Map:', x,y,tiles)
-    tiles_map = tiles;
-    client.onYou( me => {
-        console.log('You:', me);
-        agent = {
-            x : me.x, 
-            y : me.y,
-            id: me.id,
-            name : me.name,
-            score : me.score
-        };
-        let moves = possibleDestinations(agent.x, agent.y, tiles_map);
-        console.log(moves);
-        if (moves.length != 0){
-            let index = Math.round(Math.random() * moves.length) - 1;
-            client.emitMove(moves[index]).then((res) => {console.log(res);});
-        }
-            
-    }
-
-)}
-)
-
-
+client.onYou( ( {id, name, x, y, score} ) => {
+    me.id = id
+    me.name = name
+    me.x = x
+    me.y = y
+    me.score = score
+    eventEmitter.emit("me");
+} )
+ 
+client.onMap((tiles) => {
+    eventEmitter.emit("map");
+});
