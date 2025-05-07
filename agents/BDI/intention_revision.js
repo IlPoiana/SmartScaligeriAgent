@@ -48,12 +48,10 @@ function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
  */
 function rewardFun(predicate, {x: x1, y:y1}) {
     const id_p = predicate[3]
-    console.log("id parcel", id_p)
-    console.log("parcels", parcels)
-    console.log("parcel get", parcels.get(id_p))
 
     const reward = (parcels.get(id_p)).reward   //capire perchè è undefined
-    return reward - distance({x:x1,y:y1},{ x:parcels.get(id_p).x, y:parcels.get(id_p).y});
+    return Math.abs(Number.MAX_VALUE - distance({x:x1,y:y1},{ x:parcels.get(id_p).x, y:parcels.get(id_p).y}));
+    return Math.abs(reward - distance({x:x1,y:y1},{ x:parcels.get(id_p).x, y:parcels.get(id_p).y}));
   }
 
 /**
@@ -219,16 +217,38 @@ class IntentionRevisionRevise extends IntentionRevision {
                 
                 console.log("current intention is delivery")
                 //if not delivery is go_pick_up
-                console.log("predicate: ",predicate)
                 let utility_0 = rewardFun(predicate, me);
                 console.log(this.current_intention.predicate)
                 let utility_curr = rewardFun(this.current_intention.predicate, me)
 
                 //if the utility of the new intention is higher than the current then I'll stop the current one and change
                 if(utility_0 > utility_curr){
+                    console.log("this: ", predicate, "better than: ", this.current_intention.predicate);
                     flag = false;
                     this.current_intention.stop();
                     const intention = new Intention( this, predicate );
+
+                    this.intention_queue.map(val => {
+                        console.log("val0: ", val.predicate)
+                    });
+
+                    this.intention_queue.sort((a, b) =>{
+
+                        if(a.predicate[3] && b.predicate[3])
+                           return rewardFun(a.predicate, me) - rewardFun(b.predicate, me)
+                        else return 0;
+                    })
+
+                    this.intention_queue.map(val => {
+                        console.log("val1: ", val.predicate)
+                    });
+
+                    this.intention_queue.reverse();
+
+                    this.intention_queue.map(val => {
+                        console.log("val2: ", val.predicate)
+                    });
+
                     this.intention_queue.unshift(intention);
                     this.intention_queue.push(this.current_intention);  //fix this is not the best insertion in the array
                 }
@@ -242,10 +262,14 @@ class IntentionRevisionRevise extends IntentionRevision {
             const intention = new Intention( this, predicate );
             this.intention_queue.push( intention );
         }
+
         // TODO
         // - order intentions based on utility function (reward - cost) (for example, parcel score minus distance)
         // - eventually stop current one
         // - evaluate validity of intention
+        // - adding a timer for the parcel that 
+        // - ordering of the queue by nearest parcel
+        //
 
     }
 
@@ -421,7 +445,7 @@ class BFSMove extends Plan {
     async execute ( go_to, x, y ) {
         // console.log(`starting DFS: ${[me.x,me.y]} ${[x,y]}`);
         let path = BFS([me.x,me.y], [x,y], accessible_tiles)
-        console.log("finished BFS", path);
+        //console.log("finished BFS", path);
         for ( let i = 0; i < path.length; i++ ) {
             const next_tile = path[i];
 
