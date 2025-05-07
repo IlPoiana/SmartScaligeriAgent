@@ -165,8 +165,6 @@ class IntentionRevision {
                 // Is queued intention still valid? Do I still want to achieve it?
                 // TODO this hard-coded implementation is an example
 
-
-
                 let id = intention.predicate[3]
                 let p = parcels.get(id)
                 if ( p && p.carriedBy ) {
@@ -206,11 +204,17 @@ class IntentionRevisionRevise extends IntentionRevision {
             return; // intention is already queued
 
 
-        let predicate_x; let predicate_y; let predicate_parcel_id; let predicate_desire;
+        let flag = true;
+        let predicate_x; 
+        let predicate_y; 
+        let predicate_parcel_id; 
+        let predicate_desire;
         [predicate_desire, predicate_x, predicate_y, predicate_parcel_id] = predicate;
 
+        //checking if there exist a current intention
         if(this.current_intention && this.current_intention.predicate && this.current_intention.predicate[0]){
 
+            //checking if the current intention predicate is different than a delivery
             if(this.current_intention.predicate[0] != 'delivery' && predicate[0] != 'delivery'){
                 
                 console.log("current intention is delivery")
@@ -219,51 +223,34 @@ class IntentionRevisionRevise extends IntentionRevision {
                 let utility_0 = rewardFun(predicate, me);
                 console.log(this.current_intention.predicate)
                 let utility_curr = rewardFun(this.current_intention.predicate, me)
+
+                //if the utility of the new intention is higher than the current then I'll stop the current one and change
                 if(utility_0 > utility_curr){
+                    flag = false;
                     this.current_intention.stop();
                     const intention = new Intention( this, predicate );
                     this.intention_queue.unshift(intention);
                     this.intention_queue.push(this.current_intention);  //fix this is not the best insertion in the array
                 }
-                else{
-                    console.log("predicate: ", predicate);
-                    console.log( 'IntentionRevisionRevise.push', predicate );
-                    const intention = new Intention( this, predicate );
-                    this.intention_queue.push( intention );
-                }
+            }   
+        }
 
-            }
-            else{
-                console.log("predicate: ", predicate);
-                console.log( 'IntentionRevisionReplace.push', predicate );
-                const intention = new Intention( this, predicate );
-                this.intention_queue.push( intention );
-            }
-
-            
-        }else{
+        if(flag){
+            console.debug("first if");
             console.log("predicate: ", predicate);
             console.log( 'IntentionRevisionReplace.push', predicate );
             const intention = new Intention( this, predicate );
             this.intention_queue.push( intention );
         }
-
-    
-        
-
-        
-
-
         // TODO
         // - order intentions based on utility function (reward - cost) (for example, parcel score minus distance)
-
         // - eventually stop current one
         // - evaluate validity of intention
-
 
     }
 
 }
+
 
 var myAgent = new IntentionRevisionRevise();
 
