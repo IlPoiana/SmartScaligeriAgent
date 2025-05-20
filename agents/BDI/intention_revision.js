@@ -49,8 +49,9 @@ function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
 function rewardFun(predicate, {x: x1, y:y1}) {
     const id_p = predicate[3]
 
-    const reward = (parcels.get(id_p)).reward   //capire perchè è undefined
-    return Math.abs(Number.MAX_VALUE - distance({x:x1,y:y1},{ x:parcels.get(id_p).x, y:parcels.get(id_p).y}));
+    //quando arriva delivery diventa undefined
+    const reward = (parcels.get(id_p)).reward 
+    //return Math.abs(Number.MAX_VALUE - distance({x:x1,y:y1},{ x:parcels.get(id_p).x, y:parcels.get(id_p).y}));
     return Math.abs(reward - distance({x:x1,y:y1},{ x:parcels.get(id_p).x, y:parcels.get(id_p).y}));
   }
 
@@ -105,18 +106,19 @@ client.onParcelsSensing( parcels => {
                         return parcel.id == intention.predicate[3]
                     }).length == 0
                 )
-                    options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id ] );
+                    options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id] );
             }
         
-        console.log("\n ----- \nCHECK generating options", options);
+        console.log("\n ----- \ngenerating options: ", options);
         /**
          * Options filtering
+         * need to add also a utility function
          */
     
         options.sort((a,b) => {
             let [go_pick_up_a,x_a,y_a,id_a] = a;
             let [go_pick_up_b,x_b,y_b,id_b] = b;
-            return (distance({x:x_a,y:y_a}, me) - distance({x:x_b,y:y_b}, me));
+            return (rewardFun(a, me) - rewardFun(b, me));
         })
         console.log("CHECK 1 sorted options: ", options, "\nme: ", me);
 
@@ -125,6 +127,8 @@ client.onParcelsSensing( parcels => {
         if(options.length > 0){
             myAgent.push(['delivery']);
         }
+
+        console.log("CHECK 1 intention queue: ", myAgent.intention_queue.map(i=>i.predicate));
     }
         
 
@@ -194,6 +198,12 @@ class IntentionRevision {
 }
 
 class IntentionRevisionRevise extends IntentionRevision {
+    
+    constructor() {
+        super();
+        this.last_delivery_position = null; // salva la posizione x,y
+    }
+
     //CHANGE
     async push ( predicate ) {
         
@@ -215,10 +225,9 @@ class IntentionRevisionRevise extends IntentionRevision {
             //checking if the current intention predicate is different than a delivery
             if(this.current_intention.predicate[0] != 'delivery' && predicate[0] != 'delivery'){
                 
-                console.log("current intention is delivery")
                 //if not delivery is go_pick_up
-                let utility_0 = rewardFun(predicate, me);
-                console.log(this.current_intention.predicate)
+                let utility_0 = rewardFun(predicate, me); 
+                console.log("current intention is: ", this.current_intention.predicate)
                 let utility_curr = rewardFun(this.current_intention.predicate, me)
 
                 //if the utility of the new intention is higher than the current then I'll stop the current one and change
@@ -245,6 +254,8 @@ class IntentionRevisionRevise extends IntentionRevision {
 
                     this.intention_queue.reverse();
 
+
+
                     this.intention_queue.map(val => {
                         console.log("val2: ", val.predicate)
                     });
@@ -261,6 +272,18 @@ class IntentionRevisionRevise extends IntentionRevision {
             console.log( 'IntentionRevisionReplace.push', predicate );
             const intention = new Intention( this, predicate );
             this.intention_queue.push( intention );
+ 
+        }
+
+
+        console.log("!!!!intention queue!!!!!: ", this.intention_queue.map(i=> 
+            i.predicate!= 'delivery' 
+            ? i.predicate + ", utility: " + rewardFun(i.predicate, me)
+            : i.predicate
+        ));
+
+        if(this.intention_queue[-1] !== 'delivery'){
+            this.intention_queue.push(new Intention(this, ['delivery']));
         }
 
         // TODO
@@ -269,7 +292,6 @@ class IntentionRevisionRevise extends IntentionRevision {
         // - evaluate validity of intention
         // - adding a timer for the parcel that 
         // - ordering of the queue by nearest parcel
-        //
 
     }
 
@@ -346,6 +368,7 @@ class Intention {
 
             // if plan is 'statically' applicable
             if ( planClass.isApplicableTo( ...this.predicate ) ) {
+
                 // plan is instantiated
                 this.#current_plan = new planClass(this.parent);
                 this.log('achieving intention', ...this.predicate, 'with plan', planClass.name);
@@ -504,6 +527,9 @@ class Delivery extends Plan {
         }
         console.log("putting down");
         await client.emitPutdown();
+
+
+
         return true;
     }
 }
