@@ -68,14 +68,18 @@ client.onYou( ( {id, name, x, y, score} ) => {
 } )
 const parcels = new Map();
 var generate_options = true;
+
 client.onParcelsSensing( async ( perceived_parcels ) => {
     let found_new = false
-    
+    let nearBy = false;
+    //TODO: if an agent is near the parcel that I sense I should not add it to the beliefset
     for (const p of perceived_parcels) {
         if(!parcels.has(p.id)){
             found_new = true;
         }   
-        parcels.set( p.id, p);
+
+        parcels.set(p.id, p);
+
     }
     if(found_new)
         generate_options = true
@@ -84,9 +88,12 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
 
 } )
 
+const agents = new Map();
 
-let accessible_tiles = [];
-let delivery_map = [];
+
+
+let accessible_tiles = [];//list of accessible tiles
+let delivery_map = [];//statical list of delivery tiles
 client.onMap((width, height, tiles) => {
     accessible_tiles = removeWalls(tiles);
     delivery_map = destinationTiles(tiles);
@@ -101,12 +108,25 @@ client.onParcelsSensing( parcels => {
         const options = []
 
         for (const parcel of parcels.values()){
-                if ( ! parcel.carriedBy &&
-                    myAgent.intention_queue.filter(intention => {
-                        return parcel.id == intention.predicate[3]
-                    }).length == 0
-                )
-                    options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id] );
+
+                //verify if not already carried by another agent
+                if(parcel.carriedBy)
+                    continue;
+                //verify if not already in the beliefset
+                const already_queued = myAgent.intention_queue.some((i) => i.predicate[3] == parcel.id);
+                if(already_queued)
+                    continue;
+
+                //verify if not already in the options
+                const safe = Array.from(agents.values()).every(agent => 
+                    distance({x:agent.x,y:agent.y}, {x:parcel.x,y:parcel.y}) >= distance({x:me.x,y:me.y}, {x:parcel.x,y:parcel.y}));
+                
+                console.log("check safe: ", safe, "for parcel: ", parcel.id , "agent distance: ", Array.from(agents.values()).map(a => distance({x:a.x,y:a.y}, {x:parcel.x,y:parcel.y}) ));
+                if(!safe){
+                    console.log("parcel: ", parcel.id, "is not safe, skipping");
+                    continue;
+                }
+                options.push(['go_pick_up', parcel.x, parcel.y, parcel.id]);
             }
         
         console.log("\n ----- \ngenerating options: ", options);
@@ -157,7 +177,7 @@ class IntentionRevision {
         while ( true ) {
             // Consumes intention_queue if not empty
             if ( this.intention_queue.length > 0 ) {
-                console.log( 'intentionRevision.loop', this.intention_queue.map(i=>i.predicate) );
+                //console.log( 'intentionRevision.loop', this.intention_queue.map(i=>i.predicate) );
             
                 // Current intention
                 const intention = this.intention_queue[0];
@@ -208,9 +228,11 @@ class IntentionRevisionRevise extends IntentionRevision {
     async push ( predicate ) {
         
         // Check if already queued
-        if ( this.intention_queue.find( (i) => i.predicate.join(' ') == predicate.join(' ') ) )
+        if ( this.intention_queue.find( (i) => i.predicate.join(' ') == predicate.join(' ') ) ){
+            console.log( 'IntentionRevisionReplace.push', predicate, 'already queued' );
             return; // intention is already queued
 
+        }
 
         let flag = true;
         let predicate_x; 
@@ -283,7 +305,9 @@ class IntentionRevisionRevise extends IntentionRevision {
         ));
 
         if(this.intention_queue[-1] !== 'delivery'){
+            console.log("pushing new delivery at the END");
             this.intention_queue.push(new Intention(this, ['delivery']));
+            console.log("delivery pushed: ", this.intention_queue)
         }
 
         // TODO
@@ -371,11 +395,11 @@ class Intention {
 
                 // plan is instantiated
                 this.#current_plan = new planClass(this.parent);
-                this.log('achieving intention', ...this.predicate, 'with plan', planClass.name);
+                //this.log('achieving intention', ...this.predicate, 'with plan', planClass.name);
                 // and plan is executed and result returned
                 try {
                     const plan_res = await this.#current_plan.execute( ...this.predicate );
-                    this.log( 'succesful intention', ...this.predicate, 'with plan', planClass.name, 'with result:', plan_res );
+                    //this.log( 'succesful intention', ...this.predicate, 'with plan', planClass.name, 'with result:', plan_res );
                     return plan_res
                 // or errors are caught so to continue with next plan
                 } catch (error) {
@@ -503,7 +527,7 @@ class Delivery extends Plan {
     async execute ( delivery) {
         // console.log(`starting DFS: ${[me.x,me.y]} ${[x,y]}`);
         let path = nearestDeliveryTile(me.x,me.y, delivery_map, accessible_tiles)
-        console.log("delivery", path);
+        //console.log("delivery", path);
         for ( let i = 0; i < path.length; i++ ) {
             const next_tile = path[i];
 
