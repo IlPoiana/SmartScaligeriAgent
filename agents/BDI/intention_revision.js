@@ -1,14 +1,31 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { removeWalls,BFS } from "../lib/algorithms.js"
 
+//Believes declaration
+const me = {}
+const parcels = new Map();
+let accessible_tiles = [];
+let delivery_map = [];
 
 
-const client = new DeliverooApi(
-    'http://localhost:8080',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRiNTVlYyIsIm5hbWUiOiJBZ2VudCIsInRlYW1JZCI6IjkwZjRmNCIsInRlYW1OYW1lIjoiZGlzaSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ0MTIxOTAzfQ.8O31Xu-BwQidn2da1NfhJ_haK1GmscbzB5N_iZTXfW0'
-    // 'https://deliveroojs.onrender.com'
-    // 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMwNmI5MTZkZWYwIiwibmFtZSI6Im1hcmNvIiwiaWF0IjoxNjk2OTM5OTQyfQ.oILtKDtT-CjZxdnNYOEAB7F_zjstNzUVCxUWphx9Suw'
-)
+/*
+FUNCTIONS DECLARATION---------------------------
+*/
+
+
+/**
+ * Updates all the parcels timer 
+ */
+function updateElapsed() {
+    console.log("updating");
+    const now = Date.now();
+    parcels.forEach(parcel => {
+        parcel.timedata.elapsed = parcel.timedata.elapsed - Number((now / 1e3 - parcel.timedata.startTime).toFixed(2));
+        if(parcel.timedata.elapsed <= 0)
+            parcels.delete(parcel.data.id);
+    });
+    parcels.forEach((parcel) => console.log(parcel.data, parcel.timedata.elapsed))
+}
 
 function destinationTiles(tiles){
     var delivery = [];
@@ -40,25 +57,49 @@ function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     return dx + dy;
 }
 
+function rewardFun(predicate, {x: x1, y:y1}){
+    if(predicate[3])
+        return parcelRewardFun(predicate, {x1,y1}) + (parcels.get(predicate[3])).timedata.elapsed;
+    else if(predicate[0] == 'delivery'){
+        return predicate[1];//should be the delivery reward
+    }
+}
+
 /**
  * 
  * @param {*} predicate in the form of [desire, x, y, p_id]
  * @param {*} param1 
  * @returns 
  */
-function rewardFun(predicate, {x: x1, y:y1}) {
+function parcelRewardFun(predicate, {x: x1, y:y1}) {
     const id_p = predicate[3]
-
+    let parcel = parcels.get(id_p)
+    if(!parcel)
+        return 0;
     //quando arriva delivery diventa undefined
-    const reward = (parcels.get(id_p)).reward 
+    const reward = parcel.data.reward 
+    console.log("parcel id",id_p,"reward",reward)
     //return Math.abs(Number.MAX_VALUE - distance({x:x1,y:y1},{ x:parcels.get(id_p).x, y:parcels.get(id_p).y}));
-    return Math.abs(reward - distance({x:x1,y:y1},{ x:parcels.get(id_p).x, y:parcels.get(id_p).y}));
-  }
+    distance({x:x1,y:y1},{ x:parcel.data.x, y:parcel.data.y})
+    let computed_reward = reward -  distance({x:x1,y:y1},{ x:parcel.data.x, y:parcel.data.y});
+    console.log("CHECK reward- id:", predicate[3],computed_reward);
+    return computed_reward < 0 ? 0 : computed_reward;
+}
+
+// -----------------------------------------
+
+
+const client = new DeliverooApi(
+    'http://localhost:8080',
+    //Delivery token
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3OWM3ZCIsIm5hbWUiOiJEZWxpdmVyeSIsInRlYW1JZCI6ImJjYTBjMyIsInRlYW1OYW1lIjoiU1NBIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NDc4MzI5ODB9.t_AhdFcoHUtbjl-SBM_h1bxhXwMGmVjfk1dhqZ4oICs'
+)
+
+
 
 /**
  * Beliefset revision function
  */
-const me = {};
 client.onYou( ( {id, name, x, y, score} ) => {
     me.id = id
     me.name = name
@@ -66,7 +107,7 @@ client.onYou( ( {id, name, x, y, score} ) => {
     me.y = y
     me.score = score
 } )
-const parcels = new Map();
+
 var generate_options = true;
 
 client.onParcelsSensing( async ( perceived_parcels ) => {
@@ -74,6 +115,7 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
     let nearBy = false;
     //TODO: if an agent is near the parcel that I sense I should not add it to the beliefset
     for (const p of perceived_parcels) {
+
         if(!parcels.has(p.id)){
             found_new = true;
         }   
@@ -81,8 +123,11 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
         parcels.set(p.id, p);
 
     }
-    if(found_new)
+    
+    if(found_new){
+        updateElapsed();
         generate_options = true
+    }
     else
         generate_options = false
 
@@ -100,7 +145,7 @@ client.onMap((width, height, tiles) => {
     // console.log(`accessible_tiles ${accessible_tiles}`)
 })
 
-client.onParcelsSensing( parcels => {
+client.onParcelsSensing( detected_parcels => {
     if(generate_options){
         /**
          * Options generation
@@ -134,21 +179,27 @@ client.onParcelsSensing( parcels => {
          * Options filtering
          * need to add also a utility function
          */
-    
+
         options.sort((a,b) => {
             let [go_pick_up_a,x_a,y_a,id_a] = a;
             let [go_pick_up_b,x_b,y_b,id_b] = b;
-            return (rewardFun(a, me) - rewardFun(b, me));
+            return (parcelRewardFun(a, me) - parcelRewardFun(b, me));
         })
-        console.log("CHECK 1 sorted options: ", options, "\nme: ", me);
+        console.log("me: ", me);
+        console.log("CHECK 1 sorted options:");
+        options.map((option) => console.log(parcels.get(option[3])))
 
         options.forEach((option) =>  myAgent.push(option));      
 
         if(options.length > 0){
-            myAgent.push(['delivery']);
+            console.log("check options",);
+            let last_id = options[options.length - 1][3];
+            let last_parcel = parcels.get(last_id);
+            myAgent.push(['delivery', last_parcel.data.reward]);
+            console.log(last_parcel.data.reward);
         }
 
-        console.log("CHECK 1 intention queue: ", myAgent.intention_queue.map(i=>i.predicate));
+        console.log("CHECK 2 intention queue: ", myAgent.intention_queue.map(i=>i.predicate));
     }
         
 
@@ -240,7 +291,10 @@ class IntentionRevisionRevise extends IntentionRevision {
         let predicate_parcel_id; 
         let predicate_desire;
         [predicate_desire, predicate_x, predicate_y, predicate_parcel_id] = predicate;
-
+        if(this.intention_queue.length == 0){
+            this.intention_queue.push(new Intention( this, predicate ));
+            return;
+        }
         //checking if there exist a current intention
         if(this.current_intention && this.current_intention.predicate && this.current_intention.predicate[0]){
 
@@ -493,9 +547,11 @@ class BFSMove extends Plan {
     //CHANGE, missing the smarter usage of the generated path
     async execute ( go_to, x, y ) {
         // console.log(`starting DFS: ${[me.x,me.y]} ${[x,y]}`);
+        if ( this.stopped ) throw ['stopped'];
         let path = BFS([me.x,me.y], [x,y], accessible_tiles)
         //console.log("finished BFS", path);
         for ( let i = 0; i < path.length; i++ ) {
+            if ( this.stopped ) throw ['stopped'];
             const next_tile = path[i];
 
             const dx = next_tile.x - me.x;
@@ -528,9 +584,11 @@ class Delivery extends Plan {
     //CHANGE, missing the smarter usage of the generated path
     async execute ( delivery) {
         // console.log(`starting DFS: ${[me.x,me.y]} ${[x,y]}`);
+        if ( this.stopped ) throw ['stopped'];
         let path = nearestDeliveryTile(me.x,me.y, delivery_map, accessible_tiles)
         //console.log("delivery", path);
         for ( let i = 0; i < path.length; i++ ) {
+            if ( this.stopped ) throw ['stopped'];
             const next_tile = path[i];
 
             const dx = next_tile.x - me.x;
