@@ -208,7 +208,7 @@ client.onAgentsSensing( ( sensed_agents ) => {
     for ( const a of sensed_agents)
         if(a.id != me.id) agents.set(a.id, a);
     // console.log("updating tiles");
-    accessible_tiles = removeAgentTiles(agents,original_map);
+    accessible_tiles = removeAgentTiles(sensed_agents,original_map);
 })
 
 Promise.all([map_promise, settings_promise, me_promise]).then(() => myAgent.loop())
@@ -720,7 +720,8 @@ class Wandering extends Plan {
                 }
             }
         else{
-            console.log("accessible tiles", accessible_tiles, [target_x, target_y], me, path);
+            // console.log("accessible tiles", accessible_tiles, [target_x, target_y], me, path);
+            console.log("not able to go", [target_x, target_y], me, path)
             this.subIntention(['wait']);
             return false;
             
