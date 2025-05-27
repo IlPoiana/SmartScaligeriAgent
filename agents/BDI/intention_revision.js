@@ -92,7 +92,7 @@ function parcelRewardFun(predicate, {x: x1, y:y1}) {
 const client = new DeliverooApi(
     'http://localhost:8080',
     //Delivery token
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3OWM3ZCIsIm5hbWUiOiJEZWxpdmVyeSIsInRlYW1JZCI6ImJjYTBjMyIsInRlYW1OYW1lIjoiU1NBIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NDc4MzI5ODB9.t_AhdFcoHUtbjl-SBM_h1bxhXwMGmVjfk1dhqZ4oICs'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRiNTVlYyIsIm5hbWUiOiJBZ2VudCIsInRlYW1JZCI6IjkwZjRmNCIsInRlYW1OYW1lIjoiZGlzaSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ0MTIxOTAzfQ.8O31Xu-BwQidn2da1NfhJ_haK1GmscbzB5N_iZTXfW0'
 )
 
 
@@ -136,13 +136,15 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
 const agents = new Map();
 
 
-
-let accessible_tiles = [];//list of accessible tiles
-let delivery_map = [];//statical list of delivery tiles
 client.onMap((width, height, tiles) => {
     accessible_tiles = removeWalls(tiles);
     delivery_map = destinationTiles(tiles);
     // console.log(`accessible_tiles ${accessible_tiles}`)
+})
+
+client.onAgentsSensing( ( sensed_agents ) => {
+    for ( const a of sensed_agents)
+        agents.set(a.id, a);
 })
 
 client.onParcelsSensing( detected_parcels => {
@@ -167,6 +169,7 @@ client.onParcelsSensing( detected_parcels => {
                     distance({x:agent.x,y:agent.y}, {x:parcel.x,y:parcel.y}) >= distance({x:me.x,y:me.y}, {x:parcel.x,y:parcel.y}));
                 
                 console.log("check safe: ", safe, "for parcel: ", parcel.id , "agent distance: ", Array.from(agents.values()).map(a => distance({x:a.x,y:a.y}, {x:parcel.x,y:parcel.y}) ));
+
                 if(!safe){
                     console.log("parcel: ", parcel.id, "is not safe, skipping");
                     continue;
