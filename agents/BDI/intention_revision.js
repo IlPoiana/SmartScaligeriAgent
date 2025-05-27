@@ -194,14 +194,28 @@ client.onParcelsSensing( detected_parcels => {
          */
         const options = []
 
-        for (const parcel of detected_parcels.values()){
-                if ( ! parcel.carriedBy &&
-                    myAgent.intention_queue.filter(intention => {
-                        return parcel.id == intention.predicate[3]
-                    }).length == 0
-                )
-                    options.push( [ 'go_pick_up', parcel.x, parcel.y, parcel.id] );
-        }
+        for (const parcel of parcels.values()){
+
+                //verify if not already carried by another agent
+                if(parcel.carriedBy)
+                    continue;
+                //verify if not already in the beliefset
+                const already_queued = myAgent.intention_queue.some((i) => i.predicate[3] == parcel.id);
+                if(already_queued)
+                    continue;
+
+                //verify if not already in the options
+                const safe = Array.from(agents.values()).every(agent => 
+                    distance({x:agent.x,y:agent.y}, {x:parcel.x,y:parcel.y}) >= distance({x:me.x,y:me.y}, {x:parcel.x,y:parcel.y}));
+                
+                console.log("check safe: ", safe, "for parcel: ", parcel.id , "agent distance: ", Array.from(agents.values()).map(a => distance({x:a.x,y:a.y}, {x:parcel.x,y:parcel.y}) ));
+
+                if(!safe){
+                    console.log("parcel: ", parcel.id, "is not safe, skipping\n my position is: ", me.x, me.y, "parcel position is: ", parcel.x, parcel.y);
+                    continue;
+                }
+                options.push(['go_pick_up', parcel.x, parcel.y, parcel.id]);
+            }
         
         console.log("\n ----- \ngenerating options: ", options);
         /**
