@@ -26,6 +26,31 @@ function updateElapsed() {
     });
     parcels.forEach((parcel) => console.log(parcel.data, parcel.timedata.elapsed))
 }
+//Believes declaration
+const me = {}
+const parcels = new Map();
+let accessible_tiles = [];
+let delivery_map = [];
+
+
+/*
+FUNCTIONS DECLARATION---------------------------
+*/
+
+
+/**
+ * Updates all the parcels timer 
+ */
+function updateElapsed() {
+    console.log("updating");
+    const now = Date.now();
+    parcels.forEach(parcel => {
+        parcel.timedata.elapsed = parcel.timedata.elapsed - Number((now / 1e3 - parcel.timedata.startTime).toFixed(2));
+        if(parcel.timedata.elapsed <= 0)
+            parcels.delete(parcel.data.id);
+    });
+    parcels.forEach((parcel) => console.log(parcel.data, parcel.timedata.elapsed))
+}
 
 function destinationTiles(tiles){
     var delivery = [];
@@ -65,6 +90,14 @@ function rewardFun(predicate, {x: x1, y:y1}){
     }
 }
 
+function rewardFun(predicate, {x: x1, y:y1}){
+    if(predicate[3])
+        return parcelRewardFun(predicate, {x1,y1}) + (parcels.get(predicate[3])).timedata.elapsed;
+    else if(predicate[0] == 'delivery'){
+        return predicate[1];//should be the delivery reward
+    }
+}
+
 /**
  * 
  * @param {*} predicate in the form of [desire, x, y, p_id]
@@ -72,11 +105,17 @@ function rewardFun(predicate, {x: x1, y:y1}){
  * @returns 
  */
 function parcelRewardFun(predicate, {x: x1, y:y1}) {
+function parcelRewardFun(predicate, {x: x1, y:y1}) {
     const id_p = predicate[3]
     let parcel = parcels.get(id_p)
     if(!parcel)
         return 0;
+    let parcel = parcels.get(id_p)
+    if(!parcel)
+        return 0;
     //quando arriva delivery diventa undefined
+    const reward = parcel.data.reward 
+    console.log("parcel id",id_p,"reward",reward)
     const reward = parcel.data.reward 
     console.log("parcel id",id_p,"reward",reward)
     //return Math.abs(Number.MAX_VALUE - distance({x:x1,y:y1},{ x:parcels.get(id_p).x, y:parcels.get(id_p).y}));
@@ -108,12 +147,15 @@ client.onYou( ( {id, name, x, y, score} ) => {
     me.score = score
 } )
 
+
 var generate_options = true;
+
 client.onParcelsSensing( async ( perceived_parcels ) => {
     let found_new = false
     const now = Date.now(); //initialize all the percieved parcels at the same time
   
     for (const p of perceived_parcels) {
+
 
         if(!parcels.has(p.id)){
             found_new = true;
@@ -124,12 +166,18 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
     
     if(found_new){
         updateElapsed();
+    
+    if(found_new){
+        updateElapsed();
         generate_options = true
+    }
     }
     else
         generate_options = false
 
 } )
+
+const agents = new Map();
 
 
 
@@ -161,11 +209,16 @@ client.onParcelsSensing( detected_parcels => {
          * need to add also a utility function
          */
 
+
         options.sort((a,b) => {
             let [go_pick_up_a,x_a,y_a,id_a] = a;
             let [go_pick_up_b,x_b,y_b,id_b] = b;
             return (parcelRewardFun(a, me) - parcelRewardFun(b, me));
+            return (parcelRewardFun(a, me) - parcelRewardFun(b, me));
         })
+        console.log("me: ", me);
+        console.log("CHECK 1 sorted options:");
+        options.map((option) => console.log(parcels.get(option[3])))
         console.log("me: ", me);
         console.log("CHECK 1 sorted options:");
         options.map((option) => console.log(parcels.get(option[3])))
@@ -178,8 +231,14 @@ client.onParcelsSensing( detected_parcels => {
             let last_parcel = parcels.get(last_id);
             myAgent.push(['delivery', last_parcel.data.reward]);
             console.log(last_parcel.data.reward);
+            console.log("check options",);
+            let last_id = options[options.length - 1][3];
+            let last_parcel = parcels.get(last_id);
+            myAgent.push(['delivery', last_parcel.data.reward]);
+            console.log(last_parcel.data.reward);
         }
 
+        console.log("CHECK 2 intention queue: ", myAgent.intention_queue.map(i=>i.predicate));
         console.log("CHECK 2 intention queue: ", myAgent.intention_queue.map(i=>i.predicate));
     }
         
@@ -209,7 +268,7 @@ class IntentionRevision {
         while ( true ) {
             // Consumes intention_queue if not empty
             if ( this.intention_queue.length > 0 ) {
-                console.log( 'intentionRevision.loop', this.intention_queue.map(i=>i.predicate) );
+                //console.log( 'intentionRevision.loop', this.intention_queue.map(i=>i.predicate) );
             
                 // Current intention
                 const intention = this.intention_queue[0];
@@ -271,6 +330,10 @@ class IntentionRevisionRevise extends IntentionRevision {
         let predicate_parcel_id; 
         let predicate_desire;
         [predicate_desire, predicate_x, predicate_y, predicate_parcel_id] = predicate;
+        if(this.intention_queue.length == 0){
+            this.intention_queue.push(new Intention( this, predicate ));
+            return;
+        }
         if(this.intention_queue.length == 0){
             this.intention_queue.push(new Intention( this, predicate ));
             return;
@@ -411,11 +474,11 @@ class Intention {
 
                 // plan is instantiated
                 this.#current_plan = new planClass(this.parent);
-                this.log('achieving intention', ...this.predicate, 'with plan', planClass.name);
+                //this.log('achieving intention', ...this.predicate, 'with plan', planClass.name);
                 // and plan is executed and result returned
                 try {
                     const plan_res = await this.#current_plan.execute( ...this.predicate );
-                    this.log( 'succesful intention', ...this.predicate, 'with plan', planClass.name, 'with result:', plan_res );
+                    //this.log( 'succesful intention', ...this.predicate, 'with plan', planClass.name, 'with result:', plan_res );
                     return plan_res
                 // or errors are caught so to continue with next plan
                 } catch (error) {
@@ -496,6 +559,8 @@ class GoPickUp extends Plan {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             await this.subIntention( ['delivery']);
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
+            await this.subIntention( ['delivery']);
+        if ( this.stopped ) throw ['stopped']; // if stopped then quit
             return true;
     }
 
@@ -510,9 +575,11 @@ class BFSMove extends Plan {
     async execute ( go_to, x, y ) {
         // console.log(`starting DFS: ${[me.x,me.y]} ${[x,y]}`);
         if ( this.stopped ) throw ['stopped'];
+        if ( this.stopped ) throw ['stopped'];
         let path = BFS([me.x,me.y], [x,y], accessible_tiles)
         //console.log("finished BFS", path);
         for ( let i = 0; i < path.length; i++ ) {
+            if ( this.stopped ) throw ['stopped'];
             if ( this.stopped ) throw ['stopped'];
             const next_tile = path[i];
 
@@ -547,9 +614,11 @@ class Delivery extends Plan {
     async execute ( delivery) {
         // console.log(`starting DFS: ${[me.x,me.y]} ${[x,y]}`);
         if ( this.stopped ) throw ['stopped'];
+        if ( this.stopped ) throw ['stopped'];
         let path = nearestDeliveryTile(me.x,me.y, delivery_map, accessible_tiles)
         // console.log("delivery", path);
         for ( let i = 0; i < path.length; i++ ) {
+            if ( this.stopped ) throw ['stopped'];
             if ( this.stopped ) throw ['stopped'];
             const next_tile = path[i];
 
