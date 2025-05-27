@@ -22,9 +22,12 @@ const _rmwalls = function removeWalls(tiles){
 const _rmagenttiles = function removeAgentTiles(agents,map){
     var available = map.slice();
     agents.forEach((agent) => {
-        available = available.filter((tile) => {
-            return tile.x != Math.round(agent.x) && tile.y != Math.round(agent.y)})
+            available = available.filter(tile => {
+                return tile.x !== Math.round(agent.x)
+                || tile.y !== Math.round(agent.y);
+            });
     })
+    // console.log("accessible_tiles",available, "agents", agents);
     return available;
 }
 
@@ -125,7 +128,8 @@ function BFS(start,target,map){
         id += 1;
         //squeue the next destination
         const next = queue.shift();
-
+        if(next == undefined)
+            return null
         position = next.dest;
         visited.push(position);
 

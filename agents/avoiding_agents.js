@@ -1,4 +1,4 @@
-import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
+import { DeliverooApi, sleep } from "@unitn-asa/deliveroo-js-client";
 import { removeWalls,BFS, removeAgentTiles } from "./lib/algorithms.js"
 import { EventEmitter } from "events";
 // When sensing a parcel nearby, go there and pick it up, distance 1
@@ -15,6 +15,7 @@ const settings = {
     decay: 0,
     max_parcel: 0
 }
+let idle = false
 
 const agents = new Map(); // map of sensed agents
 /*
@@ -150,9 +151,6 @@ function rewardFun(predicate, {x: x1, y:y1}){
     
 }
 
-function updateMap(original_map, agents){
-    removeAgentTiles(agents, original_map);
-}
 
 //----------------------------------------------
 
@@ -162,7 +160,8 @@ function updateMap(original_map, agents){
 const client = new DeliverooApi(
     'http://localhost:8080',
     //Delivery token
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRiNTVlYyIsIm5hbWUiOiJBZ2VudCIsInRlYW1JZCI6IjkwZjRmNCIsInRlYW1OYW1lIjoiZGlzaSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ0MTIxOTAzfQ.8O31Xu-BwQidn2da1NfhJ_haK1GmscbzB5N_iZTXfW0'
+    // 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRiNTVlYyIsIm5hbWUiOiJBZ2VudCIsInRlYW1JZCI6IjkwZjRmNCIsInRlYW1OYW1lIjoiZGlzaSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ0MTIxOTAzfQ.8O31Xu-BwQidn2da1NfhJ_haK1GmscbzB5N_iZTXfW0'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ0N2Q1NCIsIm5hbWUiOiJhdm9pZF9hZ2VudHMiLCJ0ZWFtSWQiOiIyMWU2NmQiLCJ0ZWFtTmFtZSI6IlNTQSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4MzM5MDA5fQ.7AHML0AQKmU7NDwB7uowkb9N-7z0-ByDRZ9PsCBTSTw'
 )
 
 const event = new EventEmitter();
@@ -187,7 +186,7 @@ client.onConfig((conf) => {
     event.emit('settings');
 })
 
-client.onYou( ( {id, name, x, y, score} ) => {
+client.onYou( async ( {id, name, x, y, score} ) => {
     me.id = id
     me.name = name
     me.x = x
@@ -198,7 +197,7 @@ client.onYou( ( {id, name, x, y, score} ) => {
 
 client.onMap((width, height, tiles) => {
     accessible_tiles = removeWalls(tiles);
-    original_map = accessible_tiles;
+    original_map = accessible_tiles.slice();
     delivery_map = destinationTiles(tiles);
     settings.x = width;
     settings.y = height
@@ -207,7 +206,8 @@ client.onMap((width, height, tiles) => {
 
 client.onAgentsSensing( ( sensed_agents ) => {
     for ( const a of sensed_agents)
-        agents.set(a.id, a);
+        if(a.id != me.id) agents.set(a.id, a);
+    // console.log("updating tiles");
     accessible_tiles = removeAgentTiles(agents,original_map);
 })
 
@@ -224,8 +224,9 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
         }   
         //map of parcels id and parcel data and timedata
         parcels.set( p.id, {data:p,timedata:{startTime: now / 1e3,elapsed: p.reward}});
-        let safe = Array.from(agents.values()).every(agent => 
-                    distance(agent, p) >= distance(me, p));
+        // let safe = Array.from(agents.values()).every(agent => 
+        //             distance(agent, p) >= distance(me, p));
+        let safe = true;
         if(found_new && safe){
             let predicate = [ 'go_pick_up', p.x, p.y, p.id]
             let reward = rewardFun(predicate,me);
@@ -373,37 +374,41 @@ class IntentionRevision {
 
     async loop ( ) {
         while ( true ) {
-            // Consumes intention_queue if not empty
-            if ( this.intention_queue.length > 0) {
-                console.log( 'intentionRevision.loop', this.intention_queue.map(i=>i.predicate) );
-            
-                // Current intention
-                const intention = this.intention_queue[0];
-                this.current_intention = intention;
+            if(!idle){
+                // Consumes intention_queue if not empty
+                if ( this.intention_queue.length > 0) {
+                    console.log( 'intentionRevision.loop', this.intention_queue.map(i=>i.predicate) );
+                
+                    // Current intention
+                    const intention = this.intention_queue[0];
+                    this.current_intention = intention;
 
 
-                let id = intention.predicate[3]
-                let p = parcels.get(id)
-                if ( p && p.carriedBy ) {
-                    console.log( 'Skipping intention because no more valid', intention.predicate )
-                    //CHECK 2
-                     //stop the current intention
-                    this.intention_queue.shift(); //remove it from the queue
-                    continue;
+                    let id = intention.predicate[3]
+                    let p = parcels.get(id)
+                    if ( p && p.carriedBy ) {
+                        console.log( 'Skipping intention because no more valid', intention.predicate )
+                        //CHECK 2
+                        //stop the current intention
+                        this.intention_queue.shift(); //remove it from the queue
+                        continue;
+                    }
+                    else{
+                        //CHECK 2
+                        // Start achieving intention
+                        this.intention_queue.shift();
+                        console.log("CHECK loop:", this.#current_intention.predicate);
+                        await intention.achieve().then((res) => console.log("achieved intention: ", res)).catch( err => console.log("something went wrong in achieving your intention: ", err));
+                    }
+
+                    
                 }
                 else{
-                    //CHECK 2
-                    // Start achieving intention
-                    this.intention_queue.shift();
-                    console.log("CHECK loop:", this.#current_intention.predicate);
-                    await intention.achieve().then((res) => console.log("achieved intention: ", res)).catch( err => console.log("something went wrong in achieving your intention: ", err));
+                    await myAgent.push(['wandering']);
                 }
+            }
 
-                
-            }
-            else{
-                await myAgent.push(['wandering']);
-            }
+            
             // Postpone next iteration at setImmediate
             await new Promise( res => setImmediate( res ) );
         }
@@ -445,8 +450,10 @@ class IntentionRevisionRevise extends IntentionRevision {
             if(parcels.get(predicate[3])){
                 let reward = rewardFun(predicate,me);
                 //leave wandering as soon you detect a parcel
-                if(this.current_intention && this.current_intention.predicate[0] == 'wandering')
+                if(this.current_intention && this.current_intention.predicate[0] == 'wandering'){
+                    console.log("switched intention");
                     this.current_intention.stop();
+                }
                 // console.log("CHECK 0 pushing delivery", reward);
                 await this.push(['delivery', reward]);
             }    
@@ -486,7 +493,7 @@ class IntentionRevisionRevise extends IntentionRevision {
                     if(this.current_intention && this.current_intention.predicate[0] == 'wandering')
                         this.current_intention.stop();
                     
-                    const delivery = ['delivery', delivery_reward - 1];
+                    const delivery = ['delivery', delivery_reward / 2];
                     await this.push(delivery);
                 }
                 else
@@ -495,6 +502,7 @@ class IntentionRevisionRevise extends IntentionRevision {
             case 'wandering':
                 let wandering_arr = this.intention_queue.filter((intention) => intention.predicate[0] == 'wandering');
                 if(wandering_arr.length == 0){
+                    console.log("CHECK wandering");
                     let wandering = new Intention(this, ['wandering']);
                     this.intention_queue.push(wandering)
                 }
@@ -564,7 +572,7 @@ class GoPickUp extends Plan {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             await this.subIntention( ['go_to', x, y] );
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
-            await client.emitPickup()
+            await this.subIntention(['pick_up']);
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             return true;
     }
@@ -582,33 +590,35 @@ class BFSMove extends Plan {
         if ( this.stopped ) {return false;};
         let path = BFS([me.x,me.y], [x,y], accessible_tiles)
         //console.log("finished BFS", path);
-        for ( let i = 0; i < path.length; i++ ) {
-            if ( this.stopped ) {return false;};
-            const next_tile = path[i];
+        if(path && path.length > 1)
+            for ( let i = 0; i < path.length; i++ ) {
+                if ( this.stopped ) {return false;};
+                const next_tile = path[i];
 
-            if(accessible_tiles.filter((tile) => tile.x == next_tile.x && tile.y == next_tile.y).length == 0){
-                await this.subIntention( ['go_to', x, y]);
-                return true
-            }
+                if(accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
+                    await this.subIntention( ['go_to', x, y]);
+                    return true
+                }
 
-            const dx = next_tile.x - me.x;
-            const dy = next_tile.y - me.y;
-            
-            if( dx != 0){
-                if(dx > 0){
-                    await client.emitMove("right").catch((err) => console.log("cannot go right"))
-                } else {
-                    await client.emitMove("left").catch((err) => console.log("cannot go left"))
+                const dx = next_tile.x - me.x;
+                const dy = next_tile.y - me.y;
+                
+                if( dx != 0){
+                    if(dx > 0){
+                        await client.emitMove("right").catch((err) => console.log("cannot go right"))
+                    } else {
+                        await client.emitMove("left").catch((err) => console.log("cannot go left"))
+                    }
+                }
+                if( dy != 0){
+                    if(dy > 0){
+                        await client.emitMove("up").catch((err) => console.log("cannot go up"))
+                    } else {
+                        await client.emitMove("down").catch((err) => console.log("cannot go down"))
+                    }
                 }
             }
-            if( dy != 0){
-                if(dy > 0){
-                    await client.emitMove("up").catch((err) => console.log("cannot go up"))
-                } else {
-                    await client.emitMove("down").catch((err) => console.log("cannot go down"))
-                }
-            }
-        }
+        else return false;
         return true;
     }
 }
@@ -624,39 +634,40 @@ class Delivery extends Plan {
         if ( this.stopped ) {return false;}
         let path = nearestDeliveryTile(me.x,me.y, delivery_map, accessible_tiles)
         // console.log("delivery", path);
-        for ( let i = 0; i < path.length; i++ ) {
-            if ( this.stopped ) {return false;};
-            const next_tile = path[i];
+        if(path && path.length > 1)
+            for ( let i = 0; i < path.length; i++ ) {
+                if ( this.stopped ) {return false;};
+                const next_tile = path[i];
 
-            if(accessible_tiles.filter((tile) => tile.x == next_tile.x && tile.y == next_tile.y).length == 0){
-                await this.subIntention( ['delivery']);
-                return true
-            }
+                if(accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
+                    await this.subIntention( ['delivery']);
+                    return true
+                }
 
-            const dx = next_tile.x - me.x;
-            const dy = next_tile.y - me.y;
-            
-            if( dx != 0){
-                if(dx > 0){
-                    await client.emitMove("right").catch((err) => console.log("cannot go right"))
-                } else {
-                    await client.emitMove("left").catch((err) => console.log("cannot go left"))
+                const dx = next_tile.x - me.x;
+                const dy = next_tile.y - me.y;
+                
+                if( dx != 0){
+                    if(dx > 0){
+                        await client.emitMove("right").catch((err) => console.log("cannot go right"))
+                    } else {
+                        await client.emitMove("left").catch((err) => console.log("cannot go left"))
+                    }
+                }
+                if( dy != 0){
+                    if(dy > 0){
+                        await client.emitMove("up").catch((err) => console.log("cannot go up"))
+                    } else {
+                        await client.emitMove("down").catch((err) => console.log("cannot go down"))
+                    }
                 }
             }
-            if( dy != 0){
-                if(dy > 0){
-                    await client.emitMove("up").catch((err) => console.log("cannot go up"))
-                } else {
-                    await client.emitMove("down").catch((err) => console.log("cannot go down"))
-                }
-            }
+        else{
+            return false;
         }
-        console.log("putting down");
-        await client.emitPutdown();
-
-
-
-        return true;
+        if ( this.stopped ) {return false;}
+        await this.subIntention(['put_down']).then(() => {return true}).catch((err) => {console.log(err); return false})
+        
     }
 }
 
@@ -667,43 +678,87 @@ class Wandering extends Plan {
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( desire ) {
-        // console.log(`starting DFS: ${[me.x,me.y]} ${[x,y]}`);
-        
         let target_x; let target_y;
-        [target_x, target_y] = wandering(accessible_tiles); 
-        // console.log(me,target_x,target_y, accessible_tiles);
-       if ( this.stopped ) {return false;}
-        let path = BFS([me.x,me.y],[target_x, target_y],accessible_tiles);
-        // console.log("wandering", path);
-        console.log("wandering")
-        for ( let i = 0; i < path.length; i++ ) {
+        let path;
+        try{
+            [target_x, target_y] = wandering(accessible_tiles); 
+            // console.log(me,target_x,target_y, accessible_tiles);
             if ( this.stopped ) {return false;}
-            const next_tile = path[i];
+        
+            path = BFS([me.x,me.y],[target_x, target_y],accessible_tiles);
+        }        
+        catch(err){
+            console.log("broken BFS", err);
+        }
+        if(path && path.length > 1)
+            for ( let i = 0; i < path.length; i++ ) {
+                if ( this.stopped ) {return false;}
+                const next_tile = path[i];
 
-            if(accessible_tiles.filter((tile) => tile.x == next_tile.x && tile.y == next_tile.y).length == 0){
-                await this.subIntention( ['wandering']);
-                return true
+                if(accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
+                    console.log("next tile not available");
+                    await this.subIntention( ['wandering']);
+                    return true
+                }
+
+                const dx = next_tile.x - me.x;
+                const dy = next_tile.y - me.y;
+                
+                if( dx != 0){
+                    if(dx > 0){
+                        await client.emitMove("right").catch((err) => console.log("cannot go right"))
+                    } else {
+                        await client.emitMove("left").catch((err) => console.log("cannot go left"))
+                    }
+                }
+                if( dy != 0){
+                    if(dy > 0){
+                        await client.emitMove("up").catch((err) => console.log("cannot go up"))
+                    } else {
+                        await client.emitMove("down").catch((err) => console.log("cannot go down"))
+                    }
+                }
             }
-
-            const dx = next_tile.x - me.x;
-            const dy = next_tile.y - me.y;
+        else{
+            console.log("accessible tiles", accessible_tiles, [target_x, target_y], me, path);
+            this.subIntention(['wait']);
+            return false;
             
-            if( dx != 0){
-                if(dx > 0){
-                    await client.emitMove("right").catch((err) => console.log("cannot go right"))
-                } else {
-                    await client.emitMove("left").catch((err) => console.log("cannot go left"))
-                }
-            }
-            if( dy != 0){
-                if(dy > 0){
-                    await client.emitMove("up").catch((err) => console.log("cannot go up"))
-                } else {
-                    await client.emitMove("down").catch((err) => console.log("cannot go down"))
-                }
-            }
         }
         return true;
+    }
+}
+
+class PickUp extends Plan{
+    static isApplicableTo ( desire ) {
+        return desire == 'pick_up';
+    }
+    //CHANGE, missing the smarter usage of the generated path
+    async execute ( desire ) {
+        await client.emitPickup().then(() => {return true}).catch((err) => {console.log(err); return false})
+    }
+}
+
+class PutDown extends Plan{
+    static isApplicableTo ( desire ) {
+        return desire == 'put_down';
+    }
+    //CHANGE, missing the smarter usage of the generated path
+    async execute ( desire ) {
+        await client.emitPutdown().then(() => {return true}).catch((err) => {console.log(err); return false})
+    }
+}
+
+class Idle extends Plan{
+    static isApplicableTo ( desire ) {
+        return desire == 'wait';
+    }
+    //CHANGE, missing the smarter usage of the generated path
+    async execute ( desire ) {
+        idle = true;
+        setTimeout(() => {console.log("waited 1 second")
+            idle = false;
+        }, 1000);
     }
 }
 
@@ -712,3 +767,6 @@ planLibrary.push( GoPickUp )
 planLibrary.push( BFSMove )
 planLibrary.push( Delivery)
 planLibrary.push( Wandering)
+planLibrary.push( PickUp)
+planLibrary.push( PutDown)
+planLibrary.push( Idle)
