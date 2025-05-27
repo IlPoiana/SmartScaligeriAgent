@@ -1,6 +1,7 @@
 import { DeliverooApi, sleep } from "@unitn-asa/deliveroo-js-client";
 import { removeWalls,BFS, removeAgentTiles } from "./lib/algorithms.js"
 import { EventEmitter } from "events";
+import { default as argsParser } from "args-parser";
 // When sensing a parcel nearby, go there and pick it up, distance 1
 
 const me = {}
@@ -157,12 +158,14 @@ function rewardFun(predicate, {x: x1, y:y1}){
 // When sensing a parcel nearby, go there and pick it up, distance 1
 
 // SIUMM token for azure server
-const client = new DeliverooApi(
-    'http://localhost:8080',
-    //Delivery token
-    // 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRiNTVlYyIsIm5hbWUiOiJBZ2VudCIsInRlYW1JZCI6IjkwZjRmNCIsInRlYW1OYW1lIjoiZGlzaSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ0MTIxOTAzfQ.8O31Xu-BwQidn2da1NfhJ_haK1GmscbzB5N_iZTXfW0'
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ0N2Q1NCIsIm5hbWUiOiJhdm9pZF9hZ2VudHMiLCJ0ZWFtSWQiOiIyMWU2NmQiLCJ0ZWFtTmFtZSI6IlNTQSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4MzM5MDA5fQ.7AHML0AQKmU7NDwB7uowkb9N-7z0-ByDRZ9PsCBTSTw'
-)
+// const client = new DeliverooApi(
+//     'http://localhost:8080',
+//     //Delivery token
+//     // 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRiNTVlYyIsIm5hbWUiOiJBZ2VudCIsInRlYW1JZCI6IjkwZjRmNCIsInRlYW1OYW1lIjoiZGlzaSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ0MTIxOTAzfQ.8O31Xu-BwQidn2da1NfhJ_haK1GmscbzB5N_iZTXfW0'
+//     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ0N2Q1NCIsIm5hbWUiOiJhdm9pZF9hZ2VudHMiLCJ0ZWFtSWQiOiIyMWU2NmQiLCJ0ZWFtTmFtZSI6IlNTQSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4MzM5MDA5fQ.7AHML0AQKmU7NDwB7uowkb9N-7z0-ByDRZ9PsCBTSTw'
+// )
+const args = argsParser(process.argv);
+const client = new DeliverooApi(args.host,args.token);
 
 const event = new EventEmitter();
 
