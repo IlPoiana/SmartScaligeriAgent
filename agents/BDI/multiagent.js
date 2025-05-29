@@ -197,7 +197,6 @@ client.onYou( ( {id, name, x, y, score} ) => {
     event.emit('me');
 
     if(!flag){
-    console.log("sono", client.id, "and I am ready to shout");
     client.emitShout( 'hello guys' );
     console.log("I am", me.name, "and I am ready to shout");
     flag = true;
@@ -223,9 +222,9 @@ client.onAgentsSensing( ( sensed_agents ) => {
 Promise.all([map_promise, settings_promise, me_promise]).then(() => myAgent.loop())
 
 client.onMsg(async (senderId, senderName, /**@type {{action:string,parcelId:string}}*/msg, reply) => {
+    console.log('message from: ', senderName, '(', senderId, ')', msg);
     if (msg?.action === 'shout') {
-        const content = typeof msg === 'string' ? msg : (msg.message || JSON.stringify(msg));
-        console.log(`🔊 Shout received from ${senderName} (ID: ${senderId}): ${content}`);
+        console.log('message from: ', senderName, '(', senderId, ')', msg.action);
     }
 })
 
@@ -259,7 +258,6 @@ client.onParcelsSensing( async ( perceived_parcels ) => {
 })
 
 //Agent loop checks if it is still valid the intention
-
 
 
 
