@@ -221,10 +221,16 @@ client.onAgentsSensing( ( sensed_agents ) => {
 
 Promise.all([map_promise, settings_promise, me_promise]).then(() => myAgent.loop())
 
-client.onMsg(async (senderId, senderName, /**@type {{action:string,parcelId:string}}*/msg, reply) => {
-    console.log('message from: ', senderName, '(', senderId, ')', msg);
-    if (msg?.action === 'shout') {
-        console.log('message from: ', senderName, '(', senderId, ')', msg.action);
+let reply = await client.emitAsk( 'f8bb2a', 'who are you?' );
+
+client.onMsg(async (senderId, senderName, msg, reply) => {
+    
+    console.log("new meg recived from", senderName + ':', msg);
+    const myname = (await client.me).name;
+    if(reply){
+        let answer = 'hello ' + senderName + ', I am ' + myname; '. what do you want?';
+        console.log("my reply: ", answer);
+        try { reply(answer)}catch{(error) => console.error("cannot reply, error: ", error)}
     }
 })
 
