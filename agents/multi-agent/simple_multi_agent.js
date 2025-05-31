@@ -1,12 +1,12 @@
 // import child_process in ES module
 import { spawn } from 'child_process';
 
-const marco = { id: 'e083aa6f59e', name: 'marco',
-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijk4ZjExZCIsIm5hbWUiOiJyb21waWJhbGxlIiwidGVhbUlkIjoiNjQ0OTRmIiwidGVhbU5hbWUiOiJnYXkiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0ODM1Mzg3NX0.K15dNEa3F7Sdop8Gf1i615gxawDlXrLZoCzcO9JbGes'
+const marco = { id: 'e083aa6f59e', name: 'SSA1',
+token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjBkYjEyYSIsIm5hbWUiOiJTU0ExIiwidGVhbUlkIjoiOTk1NDIwIiwidGVhbU5hbWUiOiJTU0EiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0ODQxODE1Mn0.JyFj-LWuMfouaiK3xrkvmOV14ucnqGE4xPXc1HIl60E'
 };
 
-const paolo = { id: '1d74b61b883', name: 'paolo',
-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjlmOTFkMiIsIm5hbWUiOiJzY2Fzc2FtYXJvbmkiLCJ0ZWFtSWQiOiIzZjNlYjkiLCJ0ZWFtTmFtZSI6ImdheSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4MzU0MDc0fQ.hTkox77yGPaoOFwhzL9gR3N0ia3vtw7ZWLrAmbsvUP4'
+const paolo = { id: '1d74b61b883', name: 'SSA2',
+token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0ZmQzNSIsIm5hbWUiOiJTU0EyIiwidGVhbUlkIjoiOWFiM2JkIiwidGVhbU5hbWUiOiJTU0EiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0ODQxODE2NH0.fpRzt3-Ed_76DkJgLGGUraZoHfXjLdd43Aok9nvXv2o'
 };
 
 // Start the processes
@@ -19,7 +19,7 @@ function spawnProcesses( me, teamMate ) {
     // marco e083aa6f59e
     const childProcess = spawn(
         `node ../avoiding_agents \
-        host="http://localhost:8080" \
+        host="https://deliveroojs.rtibdi.disi.unitn.it/" \
         token="${me.token}" \
         teamId="${teamMate.id}" `,
         { shell: true }
