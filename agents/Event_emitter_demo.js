@@ -1,8 +1,5 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
-import { log } from "console";
 import EventEmitter from "events";
-import { type } from "os";
-
 // When sensing a parcel nearby, go there and pick it up, distance 1
 
 // SIUMM token for azure server

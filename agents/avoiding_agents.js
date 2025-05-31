@@ -2,8 +2,10 @@ import { DeliverooApi, sleep } from "@unitn-asa/deliveroo-js-client";
 import { removeWalls,BFS, removeAgentTiles } from "./lib/algorithms.js"
 import { EventEmitter } from "events";
 import { default as argsParser } from "args-parser";
-// When sensing a parcel nearby, go there and pick it up, distance 1
 
+
+//belief-set variables delcaration
+// ----
 const me = {}
 const parcels = new Map();
 let accessible_tiles = [];
@@ -17,6 +19,8 @@ const settings = {
     max_parcel: 0
 }
 let idle = false
+
+// -----
 
 const agents = new Map(); // map of sensed agents
 /*
@@ -83,6 +87,11 @@ function nearestDeliveryTile(x,y, delivery_map,map){
 
 }
 
+/**
+ * 
+ * @param {*} tiles 
+ * @returns the list of spawining tiles- TO DO statically allocate the map
+ */
 function spawningTiles(tiles){
     let available = [];
     available = tiles.filter((tile) => {
@@ -178,8 +187,7 @@ function rewardFun(predicate, {x: x1, y:y1}){
 
 //----------------------------------------------
 
-// When sensing a parcel nearby, go there and pick it up, distance 1
-
+//client definition
 const client = new DeliverooApi(
     'http://localhost:8080',
     //Delivery token
@@ -188,6 +196,11 @@ const client = new DeliverooApi(
 )
 // const args = argsParser(process.argv);
 // const client = new DeliverooApi(args.host,args.token);
+
+
+/*
+EVENTS MANAGEMENT - INITIALIZE CORRECTLY THE BELIEFS
+*/
 
 const event = new EventEmitter();
 
@@ -203,7 +216,11 @@ const me_promise = new Promise((res,rej) => {
     event.once('me', () => res());
 })
 
+/*
+---------------------------------------------------------
+*/
 
+//refers to `settings` variable
 client.onConfig((conf) => {
     settings.decay = getNumber(conf.PARCEL_DECADING_INTERVAL) // could be null if infinite
     settings.max_parcel = Number(conf.PARCELS_MAX)
@@ -211,6 +228,7 @@ client.onConfig((conf) => {
     event.emit('settings');
 })
 
+//refers to `me` variable
 client.onYou( async ( {id, name, x, y, score} ) => {
     me.id = id
     me.name = name
@@ -220,6 +238,7 @@ client.onYou( async ( {id, name, x, y, score} ) => {
     event.emit('me');
 } )
 
+//refers to the tiles maps: accessible_tiles(modified runtime), original_map, delivery_map
 client.onMap((width, height, tiles) => {
     accessible_tiles = removeWalls(tiles);
     original_map = accessible_tiles.slice();
@@ -229,6 +248,7 @@ client.onMap((width, height, tiles) => {
     event.emit('map');
 })
 
+//refers to other Agents beliefs handeling, like updating the map of accessible tiles
 client.onAgentsSensing( ( sensed_agents ) => {
     for ( const a of sensed_agents)
         if(a.id != me.id) agents.set(a.id, a);
@@ -236,8 +256,10 @@ client.onAgentsSensing( ( sensed_agents ) => {
     accessible_tiles = removeAgentTiles(sensed_agents,original_map);
 })
 
+//initilize correctly the Agent loop
 Promise.all([map_promise, settings_promise, me_promise]).then(() => myAgent.loop())
 
+//refers to the parcels beliefs, here there is also the schedule of parcels pickup
 client.onParcelsSensing( async ( perceived_parcels ) => {
     let found_new = false
     const now = Date.now(); //initialize all the percieved parcels at the same time
