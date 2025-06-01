@@ -100,46 +100,7 @@ function spawningTiles(tiles){
     return available;
 }
 
-/**
- * 
- * @param {*} map 
- * @returns the furthest spawning tile
- */
-function wandering(map){
-    const x = me.x;
-    const y = me.y;
-    const dest = spawningTiles(map);
-    dest.sort((a,b) => {
-        return distance({x:x, y:y},{x:a.x,y:a.y}) - distance({x:x, y:y},{x:b.x,y:b.y})
-    })
-    // const near = dest[0];
-    
-    const target = dest[dest.length -1];
-    return [target.x, target.y];
-}
 
-/**
- * 
- * @param {*} map 
- * @returns an array of spawining tiles, sorted by distance(nearest to furthest)
- */
-function wanderingRoundRobin(map){
-    const x = me.x;
-    const y = me.y;
-    const dest = spawningTiles(map);
-    dest.sort((a,b) => {
-        return distance({x:x, y:y},{x:a.x,y:a.y}) - distance({x:x, y:y},{x:b.x,y:b.y})
-    })
-    
-    const offset = Math.round(Math.sqrt(dest.length));
-    const targets = [];
-    
-    dest.forEach((tile, index) => {
-        if(index % offset == 0)
-            targets.push([tile.x,tile.y]);
-    })
-    return targets;
-}
 
 function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     const dx = Math.abs( Math.round(x1) - Math.round(x2) )
@@ -147,42 +108,7 @@ function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     return dx + dy;
 }
 
-function parcelRewardFun(predicate, {x: x1, y:y1}) {
-    const id_p = predicate[3]
-    let parcel = parcels.get(id_p)
-    if(!parcel)
-        return 0;
-    //quando arriva delivery diventa undefined
-    // let computed_reward = reward -  distance({x:x1,y:y1},{ x:parcel.data.x, y:parcel.data.y}) / 2;
-    let my_position = {x:x1, y:y1};
-    let parcel_position = { x:parcel.data.x, y:parcel.data.y};
-    let abs_distance = distance(my_position,parcel_position) > 0 ? distance(my_position,parcel_position) : 1;
-    let computed_reward = (1 / (abs_distance * (1000/ settings.movement))) * 1000;
-    // console.log("CHECK reward- id:", predicate[3],computed_reward);
-    // console.log("CHECK 1",computed_reward, abs_distance, settings.movement);
-    return computed_reward < 0 ? 0 : computed_reward;
-}
 
-function rewardFun(predicate, {x: x1, y:y1}){
-    switch (predicate[0]) {
-        case 'go_pick_up':
-            let my_position = {x:x1, y:y1};
-            let parcel_reward = (parcels.get(predicate[3])).timedata.elapsed;
-            const final_reward = parcelRewardFun(predicate, my_position) + parcel_reward
-            // console.log("CHECK 2",predicate,parcelRewardFun(predicate, my_position),parcel_reward,final_reward);
-            return final_reward > 1 ? final_reward : 2;
-            break;
-        case 'delivery':
-            return predicate[1];
-            break;
-        case 'wandering':
-            return 0;
-            break;
-        default:
-            break;
-    }
-    
-}
 
 
 //----------------------------------------------
@@ -259,7 +185,7 @@ client.onAgentsSensing( ( sensed_agents ) => {
 //initilize correctly the Agent loop
 Promise.all([map_promise, settings_promise, me_promise]).then(() => myAgent.loop())
 
-//refers to the parcels beliefs, here there is also the schedule of parcels pickup
+//refers to the parcels beliefs, here there is also the schedule of parcles
 client.onParcelsSensing( async ( perceived_parcels ) => {
     let found_new = false
     const now = Date.now(); //initialize all the percieved parcels at the same time

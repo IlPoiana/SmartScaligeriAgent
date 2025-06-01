@@ -1,4 +1,4 @@
-function distance( {x:x1, y:y1}, {x:x2, y:y2}) {
+function _distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     const dx = Math.abs( Math.round(x1) - Math.round(x2) )
     const dy = Math.abs( Math.round(y1) - Math.round(y2) )
     return dx + dy;
@@ -234,10 +234,66 @@ function DFS(start, target, map){
     return sequence;
     
 }
+
+/**
+ * 
+ * @param {*} tiles 
+ * @returns the list of spawining tiles- TO DO statically allocate the map
+ */
+export function spawningTiles(tiles){
+    let available = [];
+    available = tiles.filter((tile) => {
+        return tile.type == 1
+    })
+    return available;
+}
+
+/**
+ * 
+ * @param {*} map 
+ * @returns the furthest spawning tile
+ */
+export function wandering(me,map){
+    const x = me.x;
+    const y = me.y;
+    const dest = spawningTiles(map);
+    dest.sort((a,b) => {
+        return _distance({x:x, y:y},{x:a.x,y:a.y}) - _distance({x:x, y:y},{x:b.x,y:b.y})
+    })
+    // const near = dest[0];
+    
+    const target = dest[dest.length -1];
+    return [target.x, target.y];
+}
+
+/**
+ * 
+ * @param {*} map 
+ * @returns an array of spawining tiles, sorted by distance(nearest to furthest)
+ */
+export function wanderingRoundRobin(me,map){
+    const x = me.x;
+    const y = me.y;
+    const dest = spawningTiles(map);
+    dest.sort((a,b) => {
+        return _distance({x:x, y:y},{x:a.x,y:a.y}) - _distance({x:x, y:y},{x:b.x,y:b.y})
+    })
+    
+    const offset = Math.round(Math.sqrt(dest.length));
+    const targets = [];
+    
+    dest.forEach((tile, index) => {
+        if(index % offset == 0)
+            targets.push([tile.x,tile.y]);
+    })
+    return targets;
+}
+
 const _tiles = destinationTiles
 const _delivery = nearestDeliveryTile
 const _DFS = DFS;
 const _BFS = BFS;
+export { _distance as distance }
 export { _rmwalls as removeWalls}
 export { _rmagenttiles as removeAgentTiles}
 export { _DFS as DFS };
