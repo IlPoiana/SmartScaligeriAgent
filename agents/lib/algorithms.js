@@ -235,6 +235,13 @@ function DFS(start, target, map){
     
 }
 
+function getNumber(str) {
+  const n = parseInt(str, 10);
+  return isNaN(n) ? null : n;
+}
+
+
+
 /**
  * 
  * @param {*} tiles 
@@ -293,6 +300,7 @@ const _tiles = destinationTiles
 const _delivery = nearestDeliveryTile
 const _DFS = DFS;
 const _BFS = BFS;
+const _getNumber = getNumber;
 export { _distance as distance }
 export { _rmwalls as removeWalls}
 export { _rmagenttiles as removeAgentTiles}
@@ -300,3 +308,4 @@ export { _DFS as DFS };
 export { _BFS as BFS };
 export {_tiles as deliveryTilesMap}
 export {_delivery as nearestDeliveryTile}
+export {_getNumber as getNumber}

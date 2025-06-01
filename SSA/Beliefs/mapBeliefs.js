@@ -1,50 +1,75 @@
 import { Beliefset } from "@unitn-asa/pddl-client";
 
-class Map {
+class DeliverooMap {
 
-    pos = { x: 0, y: 0 };
-    movement = 0;
-    decay = 0;
-    max_parcel = 0;
+    #x = 0;
+    #y = 0;
+    #movement = 0;
+    #decay = 0;
+    #max_parcel = 0;
 
     constructor() {
-        this.pos = { x: 0, y: 0 };
+        this.x = 0;
+        this.y = 0;
         this.movement = 0;
         this.decay = 0;
         this.max_parcel = 0;
     }
 
-    destinationTiles(tiles){
-    var delivery = [];
-    tiles.forEach(elem => {
-        if(elem.type == 2)
-            delivery.push({
-                x: elem.x,
-                y: elem.y,
-                type: elem.type
-            })
-    });
+    get x() {
+    return this.#x;
+  }
+  set x(value) {
+    if (typeof value !== 'number') {
+      throw new TypeError('x must be a number');
+    }
+    this.#x = value;
+  }
 
-    return delivery;
+  // Getter e setter per y
+  get y() {
+    return this.#y;
+  }
+  set y(value) {
+    if (typeof value !== 'number') {
+      throw new TypeError('y must be a number');
+    }
+    this.#y = value;
+  }
+
+  // Getter e setter per movement
+  get movement() {
+    return this.#movement;
+  }
+  set movement(value) {
+    if (typeof value !== 'number') {
+      throw new TypeError('movement must be a number');
+    }
+    this.#movement = value;
+  }
+
+  // Getter e setter per decay
+  get decay() {
+    return this.#decay;
+  }
+  set decay(value) {
+    if (typeof value !== 'number') {
+      throw new TypeError('decay must be a number');
+    }
+    this.#decay = value;
+  }
+
+  // Getter e setter per max_parcel
+  get max_parcel() {
+    return this.#max_parcel;
+  }
+  set max_parcel(value) {
+    if (typeof value !== 'number') {
+      throw new TypeError('max_parcel must be a number');
+    }
+    this.#max_parcel = value;
+  }
+
 }
 
-}
-
-const _rmwalls = function removeWalls(tiles){
-    var available = [];
-    tiles.forEach(elem => {
-        if(elem.type != 0)
-            available.push({
-                x: elem.x,
-                y: elem.y,
-                type: elem.type
-            })
-    });
-    return available;
-}
-
-
-
-
-export { _rmwalls as removeWalls }
-export { Map }
+export { DeliverooMap }
