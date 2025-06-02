@@ -43,7 +43,7 @@ class DeliverooMap {
   }
   set movement(value) {
     if (typeof value !== 'number') {
-      throw new TypeError('movement must be a number');
+      this.#movement = Number(value);
     }
     this.#movement = value;
   }
