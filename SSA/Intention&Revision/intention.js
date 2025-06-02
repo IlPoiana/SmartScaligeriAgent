@@ -1,10 +1,6 @@
-// 1 write the `planLibrary` constant and export it
-
-import { PlanLibrary } from "../Planner/plans.js";
-
-
-export class Intention extends PlanLibrary{
-
+export class Intention{
+    #plans;
+    #belief_set;
     // Plan currently used for achieving the intention 
     #current_plan;
     
@@ -33,10 +29,23 @@ export class Intention extends PlanLibrary{
     }
     #predicate;
 
-    constructor ( parent, predicate ) {
-        super();
+    // /**
+    //  * @param {this | this} parent
+    //  * @param {string[]} predicate
+    //  * @param {PlanLibrary} [plan_library]
+    //  */
+    // constructor ( parent, predicate, plan_library) {
+    //     this.#parent = parent;
+    //     this.#predicate = predicate;
+    //     this.#plans = plan_library.plans;
+    //     this.#belief_set = plan_library.belief_set;
+    // }
+
+    constructor ( parent, predicate, plans, belief_set) {
         this.#parent = parent;
         this.#predicate = predicate;
+        this.#plans = plans;
+        this.#belief_set = belief_set;
     }
 
     log ( ...args ) {
@@ -59,8 +68,7 @@ export class Intention extends PlanLibrary{
             this.#started = true;
 
         // Trying all plans in the library
-        for (const planClass of this.plans) {
-
+        for (const planClass of this.#plans) {
             // if stopped then quit
             if ( this.stopped ) throw [ 'stopped intention', ...this.predicate ];
 
@@ -68,7 +76,7 @@ export class Intention extends PlanLibrary{
             if ( planClass.isApplicableTo( ...this.predicate ) ) {
 
                 // plan is instantiated
-                this.#current_plan = new planClass(this.parent,this.belief_set);
+                this.#current_plan = new planClass(this.parent,this.#belief_set);
                 this.log('achieving intention', ...this.predicate, 'with plan', planClass.name);
                 // and plan is executed and result returned
                 try {
@@ -104,6 +112,20 @@ export class IntentionRevision {
         return this.#belief_set;
     };
 
+    #plans;
+    set plans(plans){
+        this.#plans = plans;
+    };
+    get plans() {
+        return this.#plans;
+    };
+
+
+    constructor(plan_library) {
+        this.#belief_set = plan_library.belief_set;
+        this.#plans = plan_library.plans;
+    }
+
     #current_intention = null;
     get current_intention () {
         return this.#current_intention;
@@ -112,44 +134,48 @@ export class IntentionRevision {
         this.#current_intention = intention;
     }
 
-    #intention_queue = new Array(); 
+    #intention_queue = [];
     get intention_queue () {
         return this.#intention_queue;
     }
 
     set intention_queue(intention_q){
+        this.#intention_queue = intention_q;
+    }
+
+    setIntentionQueueCopy( intention_q ){
         this.#intention_queue = intention_q.slice();
     }
+
     
     async loop ( ) {
         while ( true ) {
             if(!this.#belief_set.idle){
                 // Consumes intention_queue if not empty
-                if ( this.intention_queue.length > 0) {
-                    console.log( 'intentionRevision.loop', this.intention_queue.map(i=>i.predicate) );
+                if ( this.#intention_queue.length > 0) {
+                    console.log( 'intentionRevision.loop', this.#intention_queue.map(i=>i.predicate) );
                 
                     // Current intention
-                    const intention = this.intention_queue[0];
-                    this.current_intention = intention;
+                    const intention = this.#intention_queue[0];
+                    this.#current_intention = intention;
 
-
-                    let id = intention.predicate[3]
                     let intention_validity = this.isValid(intention);
                     if(intention_validity){
                         // Start achieving intention
-                        this.intention_queue.shift();
+                        this.#intention_queue.shift();
                         console.log("CHECK loop:", this.#current_intention.predicate);
                         await intention.achieve().then((res) => console.log("achieved intention: ", res)).catch( err => console.log("something went wrong in achieving your intention: ", err));
                     }
                     else{
                         console.log( 'Skipping intention because no more valid', intention.predicate )
                         //stop the current intention
-                        this.intention_queue.shift(); //remove it from the queue
+                        this.#intention_queue.shift(); //remove it from the queue
                         continue;
                     }
                 }
                 else{
-                    await this.push(['wandering']);
+                    this.push(['wandering']);
+
                 }
             }
 
@@ -166,7 +192,7 @@ export class IntentionRevision {
      */
     async push ( predicate ) { }
 
-    async isValid( intention ) { }
+    isValid( intention ) { }
 
     log ( ...args ) {
         console.log( ...args )

@@ -1,16 +1,14 @@
 //import distance function
 import { distance } from '../../agents/lib/algorithms.js'
 import { IntentionRevision } from './intention.js'
+import { Intention } from './intention.js';
 /**
  * Class which implements the push method that performs the revise of the intention queue
  */
-class IntentionRevisionRevise extends IntentionRevision {
+export class IntentionRevisionRevise extends IntentionRevision {    
 
-    
-
-    constructor(belief_set) {
-        super(belief_set);
-        this.belief_set = belief_set;
+    constructor(plan_library) {
+        super(plan_library);
         this.last_delivery_position = null; // salva la posizione x,y
     }
 
@@ -24,10 +22,21 @@ class IntentionRevisionRevise extends IntentionRevision {
         let my_position = this.belief_set.me;
         let parcel_position = { x:parcel.data.x, y:parcel.data.y};
         let abs_distance = distance(my_position,parcel_position) > 0 ? distance(my_position,parcel_position) : 1;
-        let computed_reward = (1 / (abs_distance * (1000/ settings.movement))) * 1000;
+        let computed_reward = (1 / (abs_distance * (1000/ this.belief_set.settings.movement))) * 1000;
         // console.log("CHECK reward- id:", predicate[3],computed_reward);
         // console.log("CHECK 1",computed_reward, abs_distance, settings.movement);
         return computed_reward < 0 ? 0 : computed_reward;
+    }
+
+    updateElapsed() {
+        // console.log("updating");
+        const now = Date.now();
+        this.belief_set.parcels.forEach(parcel => {
+            parcel.timedata.elapsed = parcel.timedata.elapsed - Number(((now / 1e3) * this.belief_set.settings.decay - parcel.timedata.startTime).toFixed(2));
+            if(parcel.timedata.elapsed <= 0){
+                this.belief_set.parcels.delete(parcel.data.id);}
+        });
+        // parcels.forEach((parcel) => console.log(parcel.data, parcel.timedata.elapsed))
     }
 
     rewardFun(predicate){
@@ -35,7 +44,7 @@ class IntentionRevisionRevise extends IntentionRevision {
         switch (predicate[0]) {
             case 'go_pick_up':
                 let parcel_reward = (this.belief_set.getParcel(predicate[3])).timedata.elapsed;
-                const final_reward = parcelRewardFun(predicate) + parcel_reward
+                const final_reward = this.parcelRewardFun(predicate) + parcel_reward
                 // console.log("CHECK 2",predicate,parcelRewardFun(predicate, my_position),parcel_reward,final_reward);
                 return final_reward > 1 ? final_reward : 2;
                 break;
@@ -56,7 +65,7 @@ class IntentionRevisionRevise extends IntentionRevision {
         switch (type) {
             case 'go_pick_up':
                 const parcel_id = intention.predicate[3];
-                const reward = rewardFun(intention.predicate)
+                const reward = this.rewardFun(intention.predicate)
                 if(!this.belief_set.getParcel( parcel_id ) || reward < 1){
                     // console.log(parcels.get(parcel_id), intention.predicate[4]);
                     return true;
@@ -102,22 +111,15 @@ class IntentionRevisionRevise extends IntentionRevision {
         const intention_name = predicate[0];
         
         // console.log("pushing",intention_name);
-        
-        // Check if already queued but not delivery(possible > 2)
-        if ( intention_name != 'delivery' && this.intention_queue.find( (i) => i.predicate.join(' ') == predicate.join(' ') ) )
-            return; // intention is already queued
-        
-        if (settings.decay){
-            updateElapsed();
-            this.cleanIntentions();
-        }
-
+        // console.log("plans: ", this.plans);
+        // console.log("belief_set: ", this.belief_set,this.belief_set.me,this.belief_set.pacels);
+        // console.log("intention queue:", this.intention_queue, this.intention_queue.length == 0 );
         if(this.intention_queue.length == 0){
 
-            this.intention_queue.push(new Intention( this, predicate ));
+            this.intention_queue.push(new Intention( this, predicate, this.plans, this.belief_set ));
             
             if(this.belief_set.getParcel(predicate[3])){
-                let reward = rewardFun(predicate);
+                let reward = this.rewardFun(predicate);
                 //leave wandering as soon you detect a parcel
                 if(this.current_intention && this.current_intention.predicate[0] == 'wandering'){
                     console.log("switched intention");
@@ -129,6 +131,15 @@ class IntentionRevisionRevise extends IntentionRevision {
             return;
         }
 
+        // Check if already queued but not delivery(possible > 2)
+        if ( intention_name != 'delivery' && this.intention_queue.find( (i) => i.predicate.join(' ') == predicate.join(' ') ) )
+            return; // intention is already queued
+        
+        if (this.belief_set.settings.decay){
+            this.updateElapsed();
+            this.cleanIntentions();
+        }
+
 
         switch (intention_name) {
             case 'delivery':
@@ -137,7 +148,7 @@ class IntentionRevisionRevise extends IntentionRevision {
                 let last_intention = this.intention_queue[this.intention_queue.length - 1];
                 if(last_intention.predicate[0] != 'delivery'){
                     console.log( 'IntentionRevisionReplace.push', predicate );
-                    const intention = new Intention( this, predicate );
+                    const intention = new Intention( this, predicate, this.plans, this.belief_set );
                     this.intention_queue.push( intention );}
                 else{
                     console.log("delivery already scheduled");
@@ -145,12 +156,12 @@ class IntentionRevisionRevise extends IntentionRevision {
                 break;
             case 'go_pick_up':
                 if(this.belief_set.getParcel(predicate[3])){
-                    let delivery_reward = rewardFun(predicate); // >= 1
-                    let new_intention = new Intention(this, predicate);
+                    let delivery_reward = this.rewardFun(predicate); // >= 1
+                    let new_intention = new Intention(this, predicate, this.plans, this.belief_set );
                     this.intention_queue.push(new_intention);
 
                     //Change the actual intention if I push something better
-                    if(this.current_intention && rewardFun(this.current_intention.predicate) < rewardFun(predicate)){
+                    if(this.current_intention && this.rewardFun(this.current_intention.predicate) < this.rewardFun(predicate)){
                         const rescheduled_intention = this.current_intention
                         this.current_intention.stop();
                         this.intention_queue.push(rescheduled_intention);
@@ -158,7 +169,7 @@ class IntentionRevisionRevise extends IntentionRevision {
 
                     this.intention_queue.sort((a, b) =>{
                         // if(a[3] && b[3])
-                        return rewardFun(a.predicate) - rewardFun(b.predicate) 
+                        return this.rewardFun(a.predicate) - this.rewardFun(b.predicate) 
                         // else return 0;
                     })
                     this.intention_queue.reverse();
@@ -176,7 +187,7 @@ class IntentionRevisionRevise extends IntentionRevision {
                 let wandering_arr = this.intention_queue.filter((intention) => intention.predicate[0] == 'wandering');
                 if(wandering_arr.length == 0){
                     console.log("CHECK wandering");
-                    let wandering = new Intention(this, ['wandering']);
+                    let wandering = new Intention(this, ['wandering'], this.plans, this.belief_set );
                     this.intention_queue.push(wandering)
                 }
                 break;
@@ -187,15 +198,18 @@ class IntentionRevisionRevise extends IntentionRevision {
 
     isValid ( intention ) {
         const my_id = this.belief_set.me.id;
+        // console.log("isValid parcels: ", this.belief_set.parcels);
         switch (intention.predicate[0]){
             case 'go_pick_up':
                 const parcel = this.belief_set.getParcel(intention.predicate[3])
                 return parcel && parcel.carriedBy != my_id; 
                 break;
             case 'delivery':
-                return this.belief_set.parcels.filter((parcel) => {
-                    return parcel.carriedBy == my_id
-                }).length != 0;
+                let counter = 0;
+                this.belief_set.parcels.forEach((parcel) => {
+                    if(parcel.carriedBy == my_id) counter++
+                })
+                return counter > 0;
                 break;
             case 'wandering':
                 return true;
