@@ -137,7 +137,7 @@ export class Beliefset {
             this.#settings.decay = getNumber(conf.PARCEL_DECADING_INTERVAL) // could be null if infinite
             this.#settings.max_parcel = Number(conf.PARCELS_MAX)
             this.#settings.movement = conf.MOVEMENT_DURATION
-        this.#event.emit('settings');
+        this.#event.emit('settings');   
         })
     }
 
