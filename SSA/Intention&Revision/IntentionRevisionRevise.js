@@ -206,8 +206,10 @@ export class IntentionRevisionRevise extends IntentionRevision {
                 break;
             case 'delivery':
                 let counter = 0;
+                // console.log("isValid: ",this.belief_set.parcels)
                 this.belief_set.parcels.forEach((parcel) => {
-                    if(parcel.carriedBy == my_id) counter++
+                    // console.log("isValid carriedBy: ", parcel.data.carriedBy);
+                    if(parcel.data.carriedBy == my_id) counter++
                 })
                 return counter > 0;
                 break;

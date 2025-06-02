@@ -48,7 +48,7 @@ function destinationTiles(tiles){
 function nearestDeliveryTile(x,y, delivery_map,map){
     const delivery_tiles = delivery_map;
     delivery_tiles.sort((a,b) => {
-        return distance({x:x, y:y},{x:a.x,y:a.y}) - distance({x:x, y:y},{x:b.x,y:b.y})
+        return _distance({x:x, y:y},{x:a.x,y:a.y}) - _distance({x:x, y:y},{x:b.x,y:b.y})
     })
     // console.log("sorted delivery: ",delivery_tiles);
     return BFS([x,y], [delivery_tiles[0].x,delivery_tiles[0].y],map);
