@@ -62,8 +62,10 @@ export class Intention{
      */
     async achieve () {
         // Cannot start twice
-        if ( this.#started)
+        if ( this.#started){
+            console.log("already started");
             return this;
+        }
         else
             this.#started = true;
 
