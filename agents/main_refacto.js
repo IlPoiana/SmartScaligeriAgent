@@ -2,7 +2,7 @@ import { Beliefset } from "../SSA/Beliefs/belief.js";
 import { IntentionRevisionRevise } from "../SSA/Intention&Revision/IntentionRevisionRevise.js";
 import { PlanLibrary } from "../SSA/Planner/plans.js";
 
-const belief_set = new Beliefset("http://localhost:8080", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImY4YmIyYSIsIm5hbWUiOiJhbm9ueW1vdXMiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0NzgzNzkyNn0.hbir2KorooVTodjVibOoHLFdZvwvyQbZUAiFgdzUvEw");
+const belief_set = new Beliefset("http://localhost:8080", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRiNTVlYyIsIm5hbWUiOiJBZ2VudCIsInRlYW1JZCI6IjkwZjRmNCIsInRlYW1OYW1lIjoiZGlzaSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ0MTIxOTAzfQ.8O31Xu-BwQidn2da1NfhJ_haK1GmscbzB5N_iZTXfW0");
 const plan_library = new PlanLibrary();
 plan_library.belief_set = belief_set;
 // console.log("CHECK1: ", plan_library.belief_set.me);

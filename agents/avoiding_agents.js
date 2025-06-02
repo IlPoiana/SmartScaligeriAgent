@@ -192,7 +192,7 @@ const client = new DeliverooApi(
     'http://localhost:8080',
     //Delivery token
     // 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRiNTVlYyIsIm5hbWUiOiJBZ2VudCIsInRlYW1JZCI6IjkwZjRmNCIsInRlYW1OYW1lIjoiZGlzaSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ0MTIxOTAzfQ.8O31Xu-BwQidn2da1NfhJ_haK1GmscbzB5N_iZTXfW0'
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ0N2Q1NCIsIm5hbWUiOiJhdm9pZF9hZ2VudHMiLCJ0ZWFtSWQiOiIyMWU2NmQiLCJ0ZWFtTmFtZSI6IlNTQSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4MzM5MDA5fQ.7AHML0AQKmU7NDwB7uowkb9N-7z0-ByDRZ9PsCBTSTw'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImY4YmIyYSIsIm5hbWUiOiJhbm9ueW1vdXMiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0NzgzNzkyNn0.hbir2KorooVTodjVibOoHLFdZvwvyQbZUAiFgdzUvEw'
 )
 // const args = argsParser(process.argv);
 // const client = new DeliverooApi(args.host,args.token);
