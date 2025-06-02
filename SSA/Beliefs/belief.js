@@ -137,7 +137,7 @@ export class Beliefset {
             this.#settings.decay = getNumber(conf.PARCEL_DECADING_INTERVAL) // could be null if infinite
             this.#settings.max_parcel = Number(conf.PARCELS_MAX)
             this.#settings.movement = conf.MOVEMENT_DURATION
-        this.#event.emit('settings');
+            this.#event.emit('settings');
         })
     }
 
@@ -166,7 +166,8 @@ export class Beliefset {
         this.#client.onYou( ( {id, name, x, y, score} ) => {
             this.#me.id = id
             this.#me.name = name
-            this.#me.pos = { x, y }
+            this.#me.x = x
+            this.#me.y = y
             this.#me.score = score
             this.#event.emit('me');
         })
@@ -193,16 +194,16 @@ export class Beliefset {
         })
     }
 
-    accesibleTiles(tiles){
-        tiles.forEach(elem => {
-            if(elem.type != 0)
-                this.#accessible_tiles.push({
-                    x: elem.x,
-                    y: elem.y,
-                    type: elem.type
-                })
-        });
-    }
+    // accessibleTiles(tiles){
+    //     tiles.forEach(elem => {
+    //         if(elem.type != 0)
+    //             this.#accessible_tiles.push({
+    //                 x: elem.x,
+    //                 y: elem.y,
+    //                 type: elem.type
+    //             })
+    //     });
+    // }
 
     destinationTiles(tiles){
         var delivery = [];

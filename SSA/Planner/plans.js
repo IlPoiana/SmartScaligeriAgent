@@ -1,7 +1,7 @@
-import { Intention } from "../Intention&Revision/intention.js";
 import { BFS, nearestDeliveryTile, wandering } from "../../agents/lib/algorithms.js";
 // 1 change with the more updated wandering
 // 2 fix idle condition
+// 3 fix subPlan queue
 
 export class PlanLibrary {
     #plans = [];
@@ -85,15 +85,25 @@ class Plan {
     // this is an array of sub intention. Multiple ones could eventually being achieved in parallel.
     #sub_intentions = [];
 
-    async subIntention ( predicate ) {
-        const sub_intention = new Intention( this, predicate );
-        this.#sub_intentions.push( sub_intention );
-        return await sub_intention.achieve();
+    /**
+     * 
+     * @param {*} planClass 
+     * @param {*} args 
+     * @param {*} belief_set 
+     */
+    async subPlan ( planClass ,args, belief_set ) {
+        // console.log("SubPlan: ", ...args, belief_set.me);
+        const sub_plan = new planClass(this, belief_set);
+        sub_plan.execute(...args).then(() => console.log("sub plan: ", ...args, "achieved")).catch("something went wrong in achieving sub plan: ", ...args);
     }
 
 }
 
 class GoPickUp extends Plan {
+
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
 
     static isApplicableTo ( go_pick_up, x, y, id ) {
         return go_pick_up == 'go_pick_up';
@@ -101,9 +111,10 @@ class GoPickUp extends Plan {
 
     async execute ( go_pick_up, x, y ) {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
-            await this.subIntention( ['go_to', x, y] );
+            // console.log("BFSMove: ", this.belief_set.me);
+            await this.subPlan( BFSMove, ['go_to', x, y], this.belief_set );
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
-            await this.subIntention(['pick_up']);
+            await this.subPlan(PickUp,['pick_up'], this.belief_set);
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             return true;
     }
@@ -112,12 +123,17 @@ class GoPickUp extends Plan {
 
 class BFSMove extends Plan {
 
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
+
     static isApplicableTo ( go_to, x, y ) {
         return go_to == 'go_to';
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( go_to, x, y ) {
         const me = this.belief_set.me;
+        // console.log("BFSMove me: ", this.belief_set.me);
         if ( this.stopped ) {return false;};
         let path = BFS([me.x,me.y], [x,y], this.belief_set.accessible_tiles)
         //console.log("finished BFS", path);
@@ -127,7 +143,7 @@ class BFSMove extends Plan {
                 const next_tile = path[i];
 
                 if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
-                    await this.subIntention( ['go_to', x, y]);
+                    await this.subPlan( BFSMove,['go_to', x, y], this.belief_set);
                     return true
                 }
 
@@ -156,6 +172,10 @@ class BFSMove extends Plan {
 
 class Delivery extends Plan {
 
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
+
     static isApplicableTo ( delivery ) {
         return delivery == 'delivery';
     }
@@ -171,7 +191,7 @@ class Delivery extends Plan {
                 const next_tile = path[i];
 
                 if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
-                    await this.subIntention( ['delivery']);
+                    await this.subPlan( Delivery,['delivery'],this.belief_set);
                     return true
                 }
 
@@ -197,18 +217,23 @@ class Delivery extends Plan {
             return false;
         }
         if ( this.stopped ) {return false;}
-        await this.subIntention(['put_down']).then(() => {return true}).catch((err) => {console.log(err); return false})
+        this.subPlan(PutDown,['put_down'], this.belief_set).then(() => {return true}).catch((err) => {console.log(err); return false})
         
     }
 }
 
 class Wandering extends Plan {
 
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
+
     static isApplicableTo ( desire ) {
         return desire == 'wandering';
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( desire ) {
+        // console.log("in wandering",this.belief_set.me);
         const me = this.belief_set.me;
         let target_x; let target_y;
         let path;
@@ -229,7 +254,7 @@ class Wandering extends Plan {
 
                 if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
                     console.log("next tile not available");
-                    await this.subIntention( ['wandering']);
+                    await this.subPlan( Wandering,['wandering'],this.belief_set);
                     return true
                 }
 
@@ -254,16 +279,22 @@ class Wandering extends Plan {
         else{
             // console.log("accessible tiles", this.belief_set.accessible_tiles, [target_x, target_y], me, path);
             console.log("not able to go", [target_x, target_y], me, path)
-            await this.subIntention(['wait']);
+            await this.subPlan(Idle,['wait'],this.belief_set);
 
             return false;
             
         }
+        console.log("finished wandering");
         return true;
     }
 }
 
 class PickUp extends Plan{
+
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
+
     static isApplicableTo ( desire ) {
         return desire == 'pick_up';
     }
@@ -274,6 +305,11 @@ class PickUp extends Plan{
 }
 
 class PutDown extends Plan{
+
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
+
     static isApplicableTo ( desire ) {
         return desire == 'put_down';
     }
@@ -284,6 +320,11 @@ class PutDown extends Plan{
 }
 
 class Idle extends Plan{
+
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
+
     static isApplicableTo ( desire ) {
         return desire == 'wait';
     }
