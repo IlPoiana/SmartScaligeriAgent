@@ -91,11 +91,26 @@ class Plan {
      * @param {*} args 
      * @param {*} belief_set 
      */
-    async subPlan ( planClass ,args, belief_set ) {
-        // console.log("SubPlan: ", ...args, belief_set.me);
-        const sub_plan = new planClass(this, belief_set);
-        sub_plan.execute(...args).then(() => console.log("sub plan: ", ...args, "achieved")).catch("something went wrong in achieving sub plan: ", ...args);
+    async subPlan(planClass, args, belief_set) {
+    const sub_plan = new planClass(this, belief_set);
+    this.#sub_intentions.push(sub_plan);
+
+    // Return the promise from sub_plan.execute(...).then(...).catch(...)…
+    return sub_plan
+        .execute(...args)
+        .then(res => {
+        console.log("sub plan:", ...args, "achieved", res);
+        return res;           // ensure the returned promise resolves to “res”
+        })
+        .catch(err => {
+        console.log("error in sub plan:", ...args, err);
+        throw err;             // re‐throw so the caller sees rejection
+        })
+        .finally(() => {
+        this.#sub_intentions.shift();
+        });
     }
+
 
 }
 
@@ -114,7 +129,7 @@ class GoPickUp extends Plan {
             // console.log("BFSMove: ", this.belief_set.me);
             await this.subPlan( BFSMove, ['go_to', x, y], this.belief_set );
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
-            await this.subPlan(PickUp,['pick_up'], this.belief_set);
+            await this.subPlan(PickUp, ['pick_up'], this.belief_set);
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             return true;
     }
@@ -181,44 +196,49 @@ class Delivery extends Plan {
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( delivery) {
-        const me = this.belief_set.me;
-        if ( this.stopped ) {return false;}
-        let path = nearestDeliveryTile(me.x,me.y, this.belief_set.delivery_map, this.belief_set.accessible_tiles)
-        // console.log("delivery", path);
-        if(path && path.length > 1)
-            for ( let i = 0; i < path.length; i++ ) {
-                if ( this.stopped ) {return false;};
-                const next_tile = path[i];
+        try{
+            const me = this.belief_set.me;
+            if ( this.stopped ) {return false;}
+            let path = nearestDeliveryTile(me.x,me.y, this.belief_set.delivery_map, this.belief_set.accessible_tiles)
+            // console.log("delivery", path);
+            if(path && path.length > 1)
+                for ( let i = 0; i < path.length; i++ ) {
+                    if ( this.stopped ) {return false;};
+                    const next_tile = path[i];
 
-                if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
-                    await this.subPlan( Delivery,['delivery'],this.belief_set);
-                    return true
-                }
+                    if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
+                        await this.subPlan( Delivery,['delivery'],this.belief_set);
+                        return true
+                    }
 
-                const dx = next_tile.x - me.x;
-                const dy = next_tile.y - me.y;
-                
-                if( dx != 0){
-                    if(dx > 0){
-                        await this.belief_set.client.emitMove("right").catch((err) => console.log("cannot go right"))
-                    } else {
-                        await this.belief_set.client.emitMove("left").catch((err) => console.log("cannot go left"))
+                    const dx = next_tile.x - me.x;
+                    const dy = next_tile.y - me.y;
+                    
+                    if( dx != 0){
+                        if(dx > 0){
+                            await this.belief_set.client.emitMove("right").catch((err) => console.log("cannot go right"))
+                        } else {
+                            await this.belief_set.client.emitMove("left").catch((err) => console.log("cannot go left"))
+                        }
+                    }
+                    if( dy != 0){
+                        if(dy > 0){
+                            await this.belief_set.client.emitMove("up").catch((err) => console.log("cannot go up"))
+                        } else {
+                            await this.belief_set.client.emitMove("down").catch((err) => console.log("cannot go down"))
+                        }
                     }
                 }
-                if( dy != 0){
-                    if(dy > 0){
-                        await this.belief_set.client.emitMove("up").catch((err) => console.log("cannot go up"))
-                    } else {
-                        await this.belief_set.client.emitMove("down").catch((err) => console.log("cannot go down"))
-                    }
-                }
+            else{
+                return false;
             }
-        else{
-            return false;
+            if ( this.stopped ) {return false;}
+            return this.subPlan(PutDown,['put_down'], this.belief_set).then((res) => {return res}).catch((err) => {console.log(err); return false})
         }
-        if ( this.stopped ) {return false;}
-        this.subPlan(PutDown,['put_down'], this.belief_set).then(() => {return true}).catch((err) => {console.log(err); return false})
-        
+        catch(err){
+            console.log("err: ", err);
+            process.exit();
+        }
     }
 }
 
@@ -300,7 +320,7 @@ class PickUp extends Plan{
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( desire ) {
-        await this.belief_set.client.emitPickup().then(() => {return true}).catch((err) => {console.log(err); return false})
+        return this.belief_set.client.emitPickup().then((res) => {return true}).catch((err) => {console.log(err); return false})
     }
 }
 
@@ -315,7 +335,7 @@ class PutDown extends Plan{
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( desire ) {
-        await this.belief_set.client.emitPutdown().then(() => {return true}).catch((err) => {console.log(err); return false})
+        return this.belief_set.client.emitPutdown().then((res) => {return true}).catch((err) => {console.log(err); return false});
     }
 }
 
