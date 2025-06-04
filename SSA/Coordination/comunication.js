@@ -1,77 +1,83 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 
-class Comunication {
+/**
+ * Gestisce la logica di “ask/say” tra due agenti.
+ */
+export default class Comunication {
+  #agent_id;
+  #client;
 
-    #agent_team
-    #agent_id
-    #client
-    
-    constructor(agent_team, agent_id, host, token) {
-        this.#agent_team = agent_team;
-        this.#agent_id = agent_id;
-        this.#client = new DeliverooApi(host, token);
-    }
+  /**
+   * @param {string} agent_id  L’ID (o “name”) con cui questo agent si registra.
+   * @param {string} host      URL del server (es. "http://localhost:8080").
+   * @param {string} token     JWT o stringa di autenticazione (se prevista).
+   */
+  constructor(agent_id, host, token) {
+    this.#agent_id = agent_id;
+    this.#client = new DeliverooApi(host, token);
+  }
 
-    set agent_team(value) {
-        this.#agent_team = value;
-    }   
+  /**  
+   * Apre la connessione Socket.IO verso il server.  
+   */
+  connect() {
+    this.#client.connect();
+  }
 
-    get agent_team() {
-        return this.#agent_team;
-    }
-    set agent_id(value) {
-        this.#agent_id = value;
-    }
-    get agent_id() {
-        return this.#agent_id;
-    }
-    get client() {
-        return this.#client;
-    }
-    set client(value) {
-        this.#client = value;
-    }
+  /**  
+   * Ritorna il DeliverooApi interno (per registrare altri listener, ecc.).  
+   */
+  get client() {
+    return this.#client;
+  }
 
-    async askMessage() {
-        let replay = await this.#client.emitAsk('who are you?')
-        console.log('askMessage: ', replay);
-    }
+  /**  
+   * Invia una “domanda” (ask) a un altro agent.  
+   * @param {string} targetId   L’ID (o name) dell’altro agent.  
+   * @param {string} question   Il testo della domanda.  
+   */
+  async ask(targetId, question) {
+    await this.#client.emitAsk(targetId, { action: "ask", question });
+    console.log(`[${this.#agent_id}] Ho inviato ask a ${targetId}: "${question}"`);
+  }
 
-    async sendMessage(message) {
-        let replay = await this.#client.emitSay();
-        console.log('sendMessage: ', replay);
-    }
-        
-        // Ask another agent a question
-    async ask(target_id, message) {
-        // target_id: the id of the agent you want to ask
-        // message: the question to ask
-        await this.#client.emitAsk(message, target_id);
-        console.log(`Asked agent ${target_id}: "${message}"`);
-    }
+  /**  
+   * Invia una “risposta” (say) a un altro agent.  
+   * @param {string} targetId   L’ID (o name) dell’altro agent.  
+   * @param {string} answer     Il testo della risposta.  
+   */
+  async reply(targetId, answer) {
+    await this.#client.emitSay(targetId, { action: "say", answer });
+    console.log(`[${this.#agent_id}] Ho inviato say a ${targetId}: "${answer}"`);
+  }
 
-    // Set a handler for incoming asks
-    onAsk(handler) {
-        // handler: function(message, from_id)
-        this.#client.onAsk((msg, from) => {
-            console.log(`Received ask from ${from}: "${msg}"`);
-            handler(msg, from);
-        });
-    }
+  /**  
+   * Registra un handler che viene chiamato quando arriva un “ask” da un altro agent.  
+   * @param {(fromId: string, question: string) => void} handler 
+   */
+  onAsk(handler) {
+    this.#client.onMsg((fromId, fromName, msg, _replyAck) => {
+      if (msg?.action === "ask") {
+        console.log(
+          `[${this.#agent_id}] Ricevuto ask da ${fromName} (${fromId}): "${msg.question}"`
+        );
+        handler(fromId, msg.question);
+      }
+    });
+  }
 
-    // Reply to another agent
-    async reply(target_id, message) {
-        await this.#client.emitSay(message, target_id);
-        console.log(`Replied to agent ${target_id}: "${message}"`);
-    }
-
-    // Set a handler for incoming replies (says)
-    onReply(handler) {
-        // handler: function(message, from_id)
-        this.#client.onSay((msg, from) => {
-            console.log(`Received reply from ${from}: "${msg}"`);
-            handler(msg, from);
-        });
-    }
-
+  /**  
+   * Registra un handler che viene chiamato quando arriva un “say” (risposta).  
+   * @param {(fromId: string, answer: string) => void} handler 
+   */
+  onReply(handler) {
+    this.#client.onMsg((fromId, fromName, msg, _replyAck) => {
+      if (msg?.action === "say") {
+        console.log(
+          `[${this.#agent_id}] Ricevuto say da ${fromName} (${fromId}): "${msg.answer}"`
+        );
+        handler(fromId, msg.answer);
+      }
+    });
+  }
 }
