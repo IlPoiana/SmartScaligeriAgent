@@ -151,7 +151,6 @@ export class IntentionRevisionRevise extends IntentionRevision {
         switch (intention_name) {
             case 'delivery':
                 //count the delivery in the queue
-                let delivery_in_queue = this.intention_queue.filter((intention) => intention.predicate[0] == 'delivery');
                 let last_intention = this.intention_queue[this.intention_queue.length - 1];
                 if(last_intention.predicate[0] != 'delivery'){
                     console.log( 'IntentionRevisionReplace.push', predicate );
@@ -162,17 +161,22 @@ export class IntentionRevisionRevise extends IntentionRevision {
                 }
                 break;
             case 'go_pick_up':
-                console.log("go_pick_up: ",this.belief_set.parcels);
+                // console.log("go_pick_up: ",this.belief_set.parcels);
                 if(this.belief_set.getParcel(predicate[3])){
                     let delivery_reward = this.rewardFun(predicate); // >= 1
                     let new_intention = new Intention(this, predicate, this.plans, this.belief_set );
                     this.intention_queue.push(new_intention);
-
-                    //Change the actual intention if I push something better
-                    if(this.current_intention && this.rewardFun(this.current_intention.predicate) < this.rewardFun(predicate)){
-                        const rescheduled_intention = this.current_intention
+                    //Change if is wandering
+                    if(this.current_intention && this.current_intention.predicate[0] == 'wandering'){
+                        console.log("switched wandering");
                         this.current_intention.stop();
+                    }
+                    //Change the actual intention if I push something better
+                    else if(this.current_intention && this.rewardFun(this.current_intention.predicate) < this.rewardFun(predicate)){
+                        const rescheduled_intention = new Intention(this, this.current_intention.predicate,this.plans, this.belief_set)
                         this.intention_queue.push(rescheduled_intention);
+                        this.current_intention.stop();
+                        console.log("switched intention");
                     }
 
                     this.intention_queue.sort((a, b) =>{
