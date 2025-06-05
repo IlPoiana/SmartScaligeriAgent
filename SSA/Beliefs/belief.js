@@ -122,9 +122,17 @@ export class Beliefset {
             });
     }
 
-    removeAgentTiles() {
-        this.#accessible_tiles = removeAgentTiles(this.#agents, this.#original_map);
+    removeAgentTiles(agents) {
+        this.#accessible_tiles = removeAgentTiles(agents, this.#original_map);
     }
+
+    /**
+     * Removes the tiles that have been seen an agent on, even if I'm not seeing it anymore
+     */
+    removePermanentlyAgentTiles(){
+        this.#accessible_tiles = removeAgentTiles(this.#agents, this.#original_map);
+    }   
+    
 
     getParcel( p_id ){
         return this.parcels.get(p_id);
@@ -187,23 +195,16 @@ export class Beliefset {
 
     onAgentsSensing() {
         this.#client.onAgentsSensing( ( sensed_agents ) => {
-            for ( const a of sensed_agents)
-                if(a.id != this.#me.id) this.#agents.set(a.id, a);
-            // console.log("updating tiles");
-            this.removeAgentTiles();
+            if(sensed_agents.length != 0){
+                for ( const a of sensed_agents)
+                    if(a.id != this.#me.id) this.#agents.set(a.id, a);
+                this.removeAgentTiles(sensed_agents);
+            }
+            else{
+                this.#accessible_tiles = this.#original_map;
+            }
         })
     }
-
-    // accessibleTiles(tiles){
-    //     tiles.forEach(elem => {
-    //         if(elem.type != 0)
-    //             this.#accessible_tiles.push({
-    //                 x: elem.x,
-    //                 y: elem.y,
-    //                 type: elem.type
-    //             })
-    //     });
-    // }
 
     destinationTiles(tiles){
         var delivery = [];
@@ -218,6 +219,26 @@ export class Beliefset {
 
         return delivery;
     }
+
+    onDeliveryTile(){
+        const x = this.me.x;
+        const y = this.me.y;
+        return this.delivery_map.filter((tile) => {
+            return tile.x == x && tile.y == y
+        }).length > 0;
+    }
+
+    /**
+     * 
+     * @returns the number of steps that the agent is able to do after each decay tick or -1 if is infinite
+     */
+    get steps_per_decay(){
+        if(this.#settings.decay){
+            return this.#settings.decay / (this.settings.movement / 1e3);    
+        }
+        else return null;
+    }
+
 
 
 

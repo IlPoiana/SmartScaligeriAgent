@@ -1,7 +1,36 @@
+import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
+import { AgentData } from "../../SSA/Beliefs/AgentData.js";
+
 function _distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     const dx = Math.abs( Math.round(x1) - Math.round(x2) )
     const dy = Math.abs( Math.round(y1) - Math.round(y2) )
     return dx + dy;
+}
+
+/**
+ * 
+ * @param {AgentData} me an object representing the position where I am
+ * @param {import("@unitn-asa/deliveroo-js-client/lib/ioClientSocket.js").tile} next_tile the tile where I have to go
+ * @param {DeliverooApi} client the client where to execute the move 
+ * Executes a single move in the direction to reach next_tile, which is 1 tile away
+ */
+export async function move(me,next_tile, client){
+    const dx = next_tile.x - me.x;
+    const dy = next_tile.y - me.y;
+    if( dx != 0){
+        if(dx > 0){
+            await client.emitMove("right").catch((err) => console.log("cannot go right"))
+        } else {
+            await client.emitMove("left").catch((err) => console.log("cannot go left"))
+        }
+    }
+    if( dy != 0){
+        if(dy > 0){
+            await client.emitMove("up").catch((err) => console.log("cannot go up"))
+        } else {
+            await client.emitMove("down").catch((err) => console.log("cannot go down"))
+        }
+    }
 }
 
 const _rmwalls = function removeWalls(tiles){
@@ -16,7 +45,6 @@ const _rmwalls = function removeWalls(tiles){
     });
     return available;
 }
-
 
 
 const _rmagenttiles = function removeAgentTiles(agents,map){

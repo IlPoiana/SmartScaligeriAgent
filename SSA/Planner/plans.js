@@ -1,7 +1,10 @@
-import { BFS, nearestDeliveryTile, wandering } from "../../agents/lib/algorithms.js";
-// 1 change with the more updated wandering
+import { distance, move, BFS, nearestDeliveryTile, wandering, wanderingRoundRobin } from "../../agents/lib/algorithms.js";
+import { Beliefset } from "../Beliefs/belief.js";
+// 1 change with the more updated wandering DONE
 // 2 fix idle condition
 // 3 fix subPlan queue
+// 4 change the delivery, when not able to reach a nearby delivery, tries to all the other delivery tiles, only if they are nearer to a spawning tile, other wise wandering
+// 4.1 wtf delivery still goes even if it has no parcels
 
 export class PlanLibrary {
     #plans = [];
@@ -14,6 +17,7 @@ export class PlanLibrary {
         this.#plans.push( PickUp)
         this.#plans.push( PutDown)
         this.#plans.push( Idle)
+        this.#plans.push( WanderingFurthest);
     }
 
     get belief_set(){
@@ -70,6 +74,11 @@ class Plan {
      */
     #parent;
 
+    /**
+     * 
+     * @param {Plan} parent 
+     * @param {Beliefset} belief_set 
+     */
     constructor ( parent, belief_set ) {
         this.#parent = parent;
         this.#belief_set = belief_set;
@@ -82,6 +91,10 @@ class Plan {
             console.log( ...args )
     }
 
+    async executePath(){
+
+    }
+
     // this is an array of sub intention. Multiple ones could eventually being achieved in parallel.
     #sub_intentions = [];
 
@@ -92,24 +105,24 @@ class Plan {
      * @param {*} belief_set 
      */
     async subPlan(planClass, args, belief_set) {
-    const sub_plan = new planClass(this, belief_set);
-    this.#sub_intentions.push(sub_plan);
+        const sub_plan = new planClass(this, belief_set);
+        this.#sub_intentions.push(sub_plan);
 
-    // Return the promise from sub_plan.execute(...).then(...).catch(...)…
-    return sub_plan
-        .execute(...args)
-        .then(res => {
-        console.log("sub plan:", ...args, "achieved", res);
-        return res;           // ensure the returned promise resolves to “res”
-        })
-        .catch(err => {
-        console.log("error in sub plan:", ...args, err);
-        throw err;             // re‐throw so the caller sees rejection
-        })
-        .finally(() => {
-        this.#sub_intentions.shift();
-        });
-    }
+        // Return the promise from sub_plan.execute(...).then(...).catch(...)…
+        return sub_plan
+            .execute(...args)
+            .then(res => {
+            console.log("sub plan:", ...args, "achieved", res);
+            return res;           // ensure the returned promise resolves to “res”
+            })
+            .catch(err => {
+            console.log("error in sub plan:", ...args, err);
+            throw err;             // re‐throw so the caller sees rejection
+            })
+            .finally(() => {
+            this.#sub_intentions.shift();
+            });
+        }
 
 
 }
@@ -162,37 +175,21 @@ class BFSMove extends Plan {
                     return true
                 }
 
-                const dx = next_tile.x - me.x;
-                const dy = next_tile.y - me.y;
-                
-                if( dx != 0){
-                    if(dx > 0){
-                        await this.belief_set.client.emitMove("right").catch((err) => console.log("cannot go right"))
-                    } else {
-                        await this.belief_set.client.emitMove("left").catch((err) => console.log("cannot go left"))
-                    }
-                }
-                if( dy != 0){
-                    if(dy > 0){
-                        await this.belief_set.client.emitMove("up").catch((err) => console.log("cannot go up"))
-                    } else {
-                        await this.belief_set.client.emitMove("down").catch((err) => console.log("cannot go down"))
-                    }
-                }
+                await move(me, next_tile, this.belief_set.client);
             }
         else return false;
         return true;
     }
 }
 
-class Delivery extends Plan {
+class DeliveryForgot extends Plan {
 
     constructor(parent, belief_set){
         super(parent, belief_set);
     }
 
     static isApplicableTo ( delivery ) {
-        return delivery == 'delivery';
+        return delivery == 'delivery_forgot';
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( delivery) {
@@ -211,23 +208,7 @@ class Delivery extends Plan {
                         return true
                     }
 
-                    const dx = next_tile.x - me.x;
-                    const dy = next_tile.y - me.y;
-                    
-                    if( dx != 0){
-                        if(dx > 0){
-                            await this.belief_set.client.emitMove("right").catch((err) => console.log("cannot go right"))
-                        } else {
-                            await this.belief_set.client.emitMove("left").catch((err) => console.log("cannot go left"))
-                        }
-                    }
-                    if( dy != 0){
-                        if(dy > 0){
-                            await this.belief_set.client.emitMove("up").catch((err) => console.log("cannot go up"))
-                        } else {
-                            await this.belief_set.client.emitMove("down").catch((err) => console.log("cannot go down"))
-                        }
-                    }
+                    await move(me, next_tile, this.belief_set.client);
                 }
             else{
                 return false;
@@ -237,9 +218,68 @@ class Delivery extends Plan {
         }
         catch(err){
             console.log("err: ", err);
-            process.exit();
         }
     }
+}
+
+
+class Delivery extends Plan {
+
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
+
+    static isApplicableTo ( delivery ) {
+        return delivery == 'delivery';
+    }
+    //CHANGE, missing the smarter usage of the generated path
+    async execute ( delivery) {
+        const me = this.belief_set.me;
+        let target_x; let target_y;
+        let path;
+
+        if ( this.stopped ) {return false;}
+        const target_array = this.belief_set.delivery_map.slice();
+        target_array.sort((a,b) => {
+            return distance(a, me) - distance(b,me);
+        })
+        
+        for(let delivery_tile of target_array){
+            target_x = delivery_tile.x;
+            target_y = delivery_tile.y;
+            let put_down = true;
+            try{
+                path = BFS([me.x,me.y],[target_x, target_y],this.belief_set.accessible_tiles);
+        
+            }catch(err){
+                console.log("broken BFS", err);
+                return false;
+            }
+            if(path){
+                if(path.length > 1)
+                    for ( let i = 0; i < path.length; i++ ) {
+                        if ( this.stopped ) {return false;}
+                        const next_tile = path[i];
+
+                        if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
+                            console.log("next tile not available, switching delivery tile");
+                            put_down = false;
+                            break;
+                        }
+
+                        await move(me, next_tile, this.belief_set.client);
+                    }
+            }
+            else {
+                console.log("not able to go", [target_x, target_y], me, path);
+                put_down = false;
+            }
+            if(put_down)
+                return await this.subPlan(PutDown,['put_down'], this.belief_set).then((res) => {return res}).catch((err) => {console.log(err); return false})
+
+        }
+    }
+    
 }
 
 class Wandering extends Plan {
@@ -250,6 +290,61 @@ class Wandering extends Plan {
 
     static isApplicableTo ( desire ) {
         return desire == 'wandering';
+    }
+    //CHANGE, missing the smarter usage of the generated path
+    async execute ( desire ) {
+        // console.log("in wandering",this.belief_set.me);
+        const me = this.belief_set.me;
+        let target_x; let target_y;
+        let target_array = [];
+        let path;
+        let fail_counter;
+        
+        target_array = wanderingRoundRobin(me,this.belief_set.accessible_tiles);
+        fail_counter = target_array.length;
+
+        if ( this.stopped ) {return false;}
+        
+        for([target_x, target_y] of target_array){
+            try{
+                path = BFS([me.x,me.y],[target_x, target_y],this.belief_set.accessible_tiles);
+        
+            }catch(err){
+                console.log("broken BFS", err);
+                return false;
+            }
+            if(path && path.length > 1){
+                for ( let i = 0; i < path.length; i++ ) {
+                    if ( this.stopped ) {return false;}
+                    const next_tile = path[i];
+
+                    if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
+                        console.log("next tile not available");
+                        break;
+                    }
+
+                    await move(me, next_tile, this.belief_set.client);
+                }       
+            }
+            else if(path.length != 1){
+                // console.log("accessible tiles", this.belief_set.accessible_tiles, [target_x, target_y], me, path);
+                console.log("not able to go", [target_x, target_y], me, path);
+                fail_counter--;
+            }
+        }    
+        await this.subPlan(Idle,['wait'],this.belief_set);
+        return fail_counter > 0;
+    }
+}
+
+class WanderingFurthest extends Plan {
+
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
+
+    static isApplicableTo ( desire ) {
+        return desire == 'wandering_furthest';
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( desire ) {
@@ -278,23 +373,7 @@ class Wandering extends Plan {
                     return true
                 }
 
-                const dx = next_tile.x - me.x;
-                const dy = next_tile.y - me.y;
-                
-                if( dx != 0){
-                    if(dx > 0){
-                        await this.belief_set.client.emitMove("right").catch((err) => console.log("cannot go right"))
-                    } else {
-                        await this.belief_set.client.emitMove("left").catch((err) => console.log("cannot go left"))
-                    }
-                }
-                if( dy != 0){
-                    if(dy > 0){
-                        await this.belief_set.client.emitMove("up").catch((err) => console.log("cannot go up"))
-                    } else {
-                        await this.belief_set.client.emitMove("down").catch((err) => console.log("cannot go down"))
-                    }
-                }
+                await move(me, next_tile, this.belief_set.client);
             }
         else{
             // console.log("accessible tiles", this.belief_set.accessible_tiles, [target_x, target_y], me, path);
@@ -335,7 +414,20 @@ class PutDown extends Plan{
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( desire ) {
-        return this.belief_set.client.emitPutdown().then((res) => {return true}).catch((err) => {console.log(err); return false});
+        if(this.belief_set.onDeliveryTile()){
+            const my_id = this.belief_set.me.id;
+            const parcels_array = [...this.belief_set.parcels];
+            return this.belief_set.client.emitPutdown().then((res) => {
+                parcels_array.forEach((elem) => {
+                    let key; let parcel; [key,parcel] = elem;
+                    if(parcel.data.carriedBy == my_id) this.belief_set.parcels.delete(key);
+                })
+                return true
+            }).catch((err) => {console.log(err); return false});
+        }
+        else{
+            return false;
+        }
     }
 }
 
