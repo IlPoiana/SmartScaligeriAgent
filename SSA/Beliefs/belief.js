@@ -8,15 +8,19 @@ import { getNumber, removeWalls } from "../../agents/lib/algorithms.js";
 export class Beliefset {
 
     //beliefset ha un attrributo che si chiama parcels
-    #parcels// Map of parcel id to parcel data
     #me
+    
     #settings
+
     #original_map
     #accessible_tiles
     #delivery_map
+    #spawning_map
+    #agents // Map of agent id to agent data
+    #parcels// Map of parcel id to parcel data
+
     #client = null;
     #event = new EventEmitter();
-    #agents // Map of agent id to agent data
     #idle = false;
 
     #map_promise = new Promise((res,rej) => {
@@ -40,6 +44,7 @@ export class Beliefset {
         this.#original_map = [];
         this.#accessible_tiles = [];
         this.#delivery_map = [];
+        this.#spawning_map = [];
         this.#agents = new Map();
         this.onConfig();
         this.onYou();
@@ -104,6 +109,14 @@ export class Beliefset {
         this.#delivery_map = value;
     }
 
+    get spawning_map() {
+        return this.#spawning_map;
+    }
+
+    set spawning_map(value) {
+        this.#spawning_map = value;
+    }
+
     get settings() {
         return this.#settings;
     }
@@ -160,8 +173,7 @@ export class Beliefset {
                 }   
                 //map of parcels id and parcel data and timedata
                 this.#parcels.set( p.id, {data:p,timedata:{startTime: now / 1e3,elapsed: p.reward}});
-                let safe = true;
-                if(found_new && safe){
+                if(found_new){
                     let predicate = [ 'go_pick_up', p.x, p.y, p.id]
                     await pushCallback(predicate);
                     found_new = false;
@@ -187,6 +199,7 @@ export class Beliefset {
             this.#accessible_tiles = removeWalls(tiles);
             this.#original_map = this.accessible_tiles.slice();
             this.#delivery_map = this.destinationTiles(tiles);
+            this.#spawning_map = this.#original_map.filter((tile) => {return tile.type == 1});
             this.#settings.x = width;
             this.#settings.y = height
             this.#event.emit('map');

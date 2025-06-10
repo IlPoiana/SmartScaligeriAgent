@@ -74,13 +74,29 @@ function destinationTiles(tiles){
 }
 
 function nearestDeliveryTile(x,y, delivery_map,map){
-    const delivery_tiles = delivery_map;
+    const delivery_tiles = delivery_map.slice();
     delivery_tiles.sort((a,b) => {
         return _distance({x:x, y:y},{x:a.x,y:a.y}) - _distance({x:x, y:y},{x:b.x,y:b.y})
     })
     // console.log("sorted delivery: ",delivery_tiles);
     return BFS([x,y], [delivery_tiles[0].x,delivery_tiles[0].y],map);
 
+}
+
+/**
+ * 
+ * @param {number} x 
+ * @param {number} y 
+ * @param {*} spawning_map 
+ * @param {*} map 
+ */
+function nearestSpawningTile(x,y,spawning_map,map){
+    const my_pos = {x:x, y:y};
+    const spawn_map = spawning_map.slice();
+    spawn_map.sort((a,b) => {
+        return _distance(my_pos,{x:a.x,y:a.y}) - _distance(my_pos,{x:b.x,y:b.y})
+    })
+    return BFS([x,y], [spawn_map[0].x,spawn_map[0].y],map);
 }
 
 function BFS(start,target,map){
@@ -148,7 +164,7 @@ function BFS(start,target,map){
                     return elem.x == q.dest.x && elem.y == q.dest.y
                 }).length == 0
             ) {
-                queue.push({seq_idx: sequence.length, dest: elem})
+                queue.push({dest: elem})
             }
         
         })
@@ -326,6 +342,7 @@ export function wanderingRoundRobin(me,map){
 
 const _tiles = destinationTiles
 const _delivery = nearestDeliveryTile
+const _spawn = nearestSpawningTile
 const _DFS = DFS;
 const _BFS = BFS;
 const _getNumber = getNumber;
@@ -336,4 +353,5 @@ export { _DFS as DFS };
 export { _BFS as BFS };
 export {_tiles as deliveryTilesMap}
 export {_delivery as nearestDeliveryTile}
+export {_spawn as nearestSpawningTile}
 export {_getNumber as getNumber}

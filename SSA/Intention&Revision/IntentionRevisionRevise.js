@@ -2,7 +2,7 @@
 import { distance, BFS, nearestDeliveryTile } from '../../agents/lib/algorithms.js'
 import { IntentionRevision, Intention } from './intention.js'
 
-//1. finish to fix isValid 
+// the actual steps to reach destination should account for a little computation time
 
 /**
  * Class which implements the push method that performs the revise of the intention queue
@@ -208,7 +208,6 @@ export class IntentionRevisionRevise extends IntentionRevision {
                 const parcel = this.belief_set.getParcel(intention.predicate[3]);
                 if(!parcel)
                     return false;
-                console.log("isValid parcel: ", parcel);
                 let reachable = true;
                 try {
                     actual_steps = (
@@ -223,24 +222,27 @@ export class IntentionRevisionRevise extends IntentionRevision {
                     // process.exit()//REMOVE
                     return false;
                 }
+                console.log("steps_number: ", steps_number, "actual steps: ", actual_steps);
                 if(steps_number){
                     if(parcel.timedata.elapsed * steps_number < actual_steps){
+                        console.log(parcel, "not reachable");
                         reachable = false;
                     }
                 }
-                if(parcel && parcel.carriedBy != my_id && reachable)
+                if(parcel && !parcel.carriedBy && reachable)
                     console.log("valid intention: ", intention.predicate);
-                return parcel && parcel.carriedBy != my_id && reachable; 
+                return parcel && !parcel.carriedBy != my_id && reachable; 
                 break;
             case 'delivery':
                 //deliver only if you arrive to the delivery tile on time
                 let counter = 0;
-                try{actual_steps = nearestDeliveryTile(me.x,me.y,this.belief_set.delivery_map, accessible_tiles).length;}
+                try{
+                    actual_steps = nearestDeliveryTile(me.x,me.y,this.belief_set.delivery_map, accessible_tiles).length;}
                 catch(err){
                     console.log("not able to do BFS in isValid: ", err);
                     return false;
                 }
-                console.log("isValid: ",my_id, this.belief_set.parcels);
+                // console.log("isValid: ",my_id, this.belief_set.parcels);
                 this.belief_set.parcels.forEach((parcel) => {
                     // console.log("isValid carriedBy: ", parcel.data.carriedBy);
                     if(parcel.data.carriedBy == my_id) {

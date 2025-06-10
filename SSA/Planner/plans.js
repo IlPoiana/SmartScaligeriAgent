@@ -1,4 +1,4 @@
-import { distance, move, BFS, nearestDeliveryTile, wandering, wanderingRoundRobin } from "../../agents/lib/algorithms.js";
+import { distance, move, BFS, nearestDeliveryTile, wandering, wanderingRoundRobin, nearestSpawningTile} from "../../agents/lib/algorithms.js";
 import { Beliefset } from "../Beliefs/belief.js";
 // 1 change with the more updated wandering DONE
 // 2 fix idle condition
@@ -101,7 +101,7 @@ class Plan {
     /**
      * 
      * @param {*} planClass 
-     * @param {*} args 
+     * @param {*} args args passed in the execute function of the plan(predicate)
      * @param {*} belief_set 
      */
     async subPlan(planClass, args, belief_set) {
@@ -229,6 +229,13 @@ class Delivery extends Plan {
         super(parent, belief_set);
     }
 
+    nearestSpawningTile(){
+        const path = nearestSpawningTile(this.belief_set.me.x, this.belief_set.me.y, this.belief_set.spawning_map, this.belief_set.accessible_tiles);
+        const spawn_tile = {x:path[0].x, y:path[0].y};
+        const tile_distance = distance(this.belief_set.me,spawn_tile);
+        return {path: path, distance: tile_distance};
+    }
+
     static isApplicableTo ( delivery ) {
         return delivery == 'delivery';
     }
@@ -237,6 +244,8 @@ class Delivery extends Plan {
         const me = this.belief_set.me;
         let target_x; let target_y;
         let path;
+        let spawn_tile_data;
+        let threshold_distance;
 
         if ( this.stopped ) {return false;}
         const target_array = this.belief_set.delivery_map.slice();
@@ -244,9 +253,10 @@ class Delivery extends Plan {
             return distance(a, me) - distance(b,me);
         })
         
-        for(let delivery_tile of target_array){
+        for(let [idx, delivery_tile] of target_array.entries()){
             target_x = delivery_tile.x;
             target_y = delivery_tile.y;
+        
             let put_down = true;
             try{
                 path = BFS([me.x,me.y],[target_x, target_y],this.belief_set.accessible_tiles);
@@ -263,14 +273,18 @@ class Delivery extends Plan {
 
                         if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
                             console.log("next tile not available, switching delivery tile");
-                            put_down = false;
-                            break;
+                            return await this.subPlan(Delivery, ['delivery'], this.belief_set);
                         }
 
                         await move(me, next_tile, this.belief_set.client);
                     }
             }
             else {
+                spawn_tile_data = this.nearestSpawningTile();
+                threshold_distance = spawn_tile_data.distance;
+                if(distance(me,delivery_tile) > threshold_distance){
+                    return await this.subPlan(Wandering, ['wandering'], this.belief_set);
+                }
                 console.log("not able to go", [target_x, target_y], me, path);
                 put_down = false;
             }
