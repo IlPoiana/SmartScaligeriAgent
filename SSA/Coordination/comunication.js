@@ -31,24 +31,10 @@ export default class Comunication {
     return this.#client;
   }
 
-  /**  
-   * Invia una “domanda” (ask) a un altro agent.  
-   * @param {string} targetId   L’ID (o name) dell’altro agent.  
-   * @param {string} question   Il testo della domanda.  
-   */
-  async ask(targetId, question) {
-    await this.#client.emitAsk(targetId, { action: "ask", question });
-    console.log(`[${this.#agent_id}] Ho inviato ask a ${targetId}: "${question}"`);
-  }
+  onShout(){
+    console.log("I am", this.#client.id, "and I am ready to shout");
+    this.#client.emitShout('hello mother fuckers')
 
-  /**  
-   * Invia una “risposta” (say) a un altro agent.  
-   * @param {string} targetId   L’ID (o name) dell’altro agent.  
-   * @param {string} answer     Il testo della risposta.  
-   */
-  async reply(targetId, answer) {
-    await this.#client.emitSay(targetId, { action: "say", answer });
-    console.log(`[${this.#agent_id}] Ho inviato say a ${targetId}: "${answer}"`);
   }
 
   /**  
