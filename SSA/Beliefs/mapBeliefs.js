@@ -54,7 +54,8 @@ class DeliverooMap {
   }
   set decay(value) {
     if (typeof value !== 'number') {
-      throw new TypeError('decay must be a number');
+      console.log("Assuming infinite decay")
+      this.#decay = null;
     }
     this.#decay = value;
   }

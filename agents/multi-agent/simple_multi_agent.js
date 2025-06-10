@@ -1,25 +1,24 @@
-// import child_process in ES module
 import { spawn } from 'child_process';
 
-const marco = { id: 'e083aa6f59e', name: 'SSA1',
-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjBkYjEyYSIsIm5hbWUiOiJTU0ExIiwidGVhbUlkIjoiOTk1NDIwIiwidGVhbU5hbWUiOiJTU0EiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0ODQxODE1Mn0.JyFj-LWuMfouaiK3xrkvmOV14ucnqGE4xPXc1HIl60E'
+const ssa1 = { id: 'e083aa6f59e', name: 'ema',
+token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxOGE2OSIsIm5hbWUiOiJlbWEiLCJ0ZWFtSWQiOiI2ZTM5Y2UiLCJ0ZWFtTmFtZSI6IlNTQSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4OTYyNzU1fQ.4Jly20BPBTs30oGwO9vgTR3fCmSoenQA6VF9yXz9jbs'
 };
 
-const paolo = { id: '1d74b61b883', name: 'SSA2',
-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0ZmQzNSIsIm5hbWUiOiJTU0EyIiwidGVhbUlkIjoiOWFiM2JkIiwidGVhbU5hbWUiOiJTU0EiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0ODQxODE2NH0.fpRzt3-Ed_76DkJgLGGUraZoHfXjLdd43Aok9nvXv2o'
+const ssa2 = { id: '1d74b61b883', name: 'stephany',
+token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNlNzc3YSIsIm5hbWUiOiJzdGVwaGFueSIsInRlYW1JZCI6IjAxY2IzNCIsInRlYW1OYW1lIjoiU1NBIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NDg5NjI3NjR9.wmCvICoQq2a2MSdSdMP6VmQUIWg-_k-EF9ql6BzVK5o'
 };
 
 // Start the processes
-spawnProcesses( marco, paolo ); // I am marco and team mate is paolo
-spawnProcesses( paolo, marco ); // I am paolo and team mate is marco
+spawnProcesses( ssa1, ssa2 ); // I am ssa1 and team mate is ssa2
+spawnProcesses( ssa2, ssa1 ); // I am ssa2 and team mate is ssa1
 
 // Function to spawn child processes
 function spawnProcesses( me, teamMate ) {
     
-    // marco e083aa6f59e
+    // ssa1 e083aa6f59e
     const childProcess = spawn(
-        `node ../avoiding_agents \
-        host="https://deliveroojs.rtibdi.disi.unitn.it/" \
+        `node ../main_local \
+        host="http://localhost:8080/" \
         token="${me.token}" \
         teamId="${teamMate.id}" `,
         { shell: true }

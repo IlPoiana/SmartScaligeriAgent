@@ -1,7 +1,36 @@
+import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
+import { AgentData } from "../../SSA/Beliefs/AgentData.js";
+
 function _distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     const dx = Math.abs( Math.round(x1) - Math.round(x2) )
     const dy = Math.abs( Math.round(y1) - Math.round(y2) )
     return dx + dy;
+}
+
+/**
+ * 
+ * @param {AgentData} me an object representing the position where I am
+ * @param {import("@unitn-asa/deliveroo-js-client/lib/ioClientSocket.js").tile} next_tile the tile where I have to go
+ * @param {DeliverooApi} client the client where to execute the move 
+ * Executes a single move in the direction to reach next_tile, which is 1 tile away
+ */
+export async function move(me,next_tile, client){
+    const dx = next_tile.x - me.x;
+    const dy = next_tile.y - me.y;
+    if( dx != 0){
+        if(dx > 0){
+            await client.emitMove("right").catch((err) => console.log("cannot go right"))
+        } else {
+            await client.emitMove("left").catch((err) => console.log("cannot go left"))
+        }
+    }
+    if( dy != 0){
+        if(dy > 0){
+            await client.emitMove("up").catch((err) => console.log("cannot go up"))
+        } else {
+            await client.emitMove("down").catch((err) => console.log("cannot go down"))
+        }
+    }
 }
 
 const _rmwalls = function removeWalls(tiles){
@@ -16,7 +45,6 @@ const _rmwalls = function removeWalls(tiles){
     });
     return available;
 }
-
 
 
 const _rmagenttiles = function removeAgentTiles(agents,map){
@@ -46,13 +74,29 @@ function destinationTiles(tiles){
 }
 
 function nearestDeliveryTile(x,y, delivery_map,map){
-    const delivery_tiles = delivery_map;
+    const delivery_tiles = delivery_map.slice();
     delivery_tiles.sort((a,b) => {
         return _distance({x:x, y:y},{x:a.x,y:a.y}) - _distance({x:x, y:y},{x:b.x,y:b.y})
     })
     // console.log("sorted delivery: ",delivery_tiles);
     return BFS([x,y], [delivery_tiles[0].x,delivery_tiles[0].y],map);
 
+}
+
+/**
+ * 
+ * @param {number} x 
+ * @param {number} y 
+ * @param {*} spawning_map 
+ * @param {*} map 
+ */
+function nearestSpawningTile(x,y,spawning_map,map){
+    const my_pos = {x:x, y:y};
+    const spawn_map = spawning_map.slice();
+    spawn_map.sort((a,b) => {
+        return _distance(my_pos,{x:a.x,y:a.y}) - _distance(my_pos,{x:b.x,y:b.y})
+    })
+    return BFS([x,y], [spawn_map[0].x,spawn_map[0].y],map);
 }
 
 function BFS(start,target,map){
@@ -120,7 +164,7 @@ function BFS(start,target,map){
                     return elem.x == q.dest.x && elem.y == q.dest.y
                 }).length == 0
             ) {
-                queue.push({seq_idx: sequence.length, dest: elem})
+                queue.push({dest: elem})
             }
         
         })
@@ -298,6 +342,7 @@ export function wanderingRoundRobin(me,map){
 
 const _tiles = destinationTiles
 const _delivery = nearestDeliveryTile
+const _spawn = nearestSpawningTile
 const _DFS = DFS;
 const _BFS = BFS;
 const _getNumber = getNumber;
@@ -308,4 +353,5 @@ export { _DFS as DFS };
 export { _BFS as BFS };
 export {_tiles as deliveryTilesMap}
 export {_delivery as nearestDeliveryTile}
+export {_spawn as nearestSpawningTile}
 export {_getNumber as getNumber}

@@ -1,3 +1,5 @@
+import { PlanLibrary } from "../Planner/plans.js";
+
 export class Intention{
     #plans;
     #belief_set;
@@ -122,7 +124,10 @@ export class IntentionRevision {
         return this.#plans;
     };
 
-
+    /**
+     * 
+     * @param {PlanLibrary} plan_library 
+     */
     constructor(plan_library) {
         this.#belief_set = plan_library.belief_set;
         this.#plans = plan_library.plans;
@@ -149,6 +154,16 @@ export class IntentionRevision {
         this.#intention_queue = intention_q.slice();
     }
 
+    updateElapsed() {
+        // console.log("updating");
+        const now = Date.now();
+        this.belief_set.parcels.forEach(parcel => {
+            parcel.timedata.elapsed = parcel.timedata.elapsed - Number(((now / 1e3) * this.belief_set.settings.decay - parcel.timedata.startTime).toFixed(2));
+            if(parcel.timedata.elapsed <= 0){
+                this.belief_set.parcels.delete(parcel.data.id);}
+        });
+        // parcels.forEach((parcel) => console.log(parcel.data, parcel.timedata.elapsed))
+    }
     
     async loop ( ) {
         while ( true ) {

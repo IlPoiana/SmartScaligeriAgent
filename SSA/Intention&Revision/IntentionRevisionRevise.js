@@ -1,7 +1,9 @@
 //import distance function
-import { distance } from '../../agents/lib/algorithms.js'
-import { IntentionRevision } from './intention.js'
-import { Intention } from './intention.js';
+import { distance, BFS, nearestDeliveryTile } from '../../agents/lib/algorithms.js'
+import { IntentionRevision, Intention } from './intention.js'
+
+// the actual steps to reach destination should account for a little computation time
+
 /**
  * Class which implements the push method that performs the revise of the intention queue
  */
@@ -28,16 +30,6 @@ export class IntentionRevisionRevise extends IntentionRevision {
         return computed_reward < 0 ? 0 : computed_reward;
     }
 
-    updateElapsed() {
-        // console.log("updating");
-        const now = Date.now();
-        this.belief_set.parcels.forEach(parcel => {
-            parcel.timedata.elapsed = parcel.timedata.elapsed - Number(((now / 1e3) * this.belief_set.settings.decay - parcel.timedata.startTime).toFixed(2));
-            if(parcel.timedata.elapsed <= 0){
-                this.belief_set.parcels.delete(parcel.data.id);}
-        });
-        // parcels.forEach((parcel) => console.log(parcel.data, parcel.timedata.elapsed))
-    }
 
     rewardFun(predicate){
 
@@ -118,10 +110,7 @@ export class IntentionRevisionRevise extends IntentionRevision {
             this.updateElapsed();
             this.cleanIntentions();
         }
-        // console.log("pushing",intention_name);
-        // console.log("plans: ", this.plans);
-        // console.log("belief_set: ", this.belief_set,this.belief_set.me,this.belief_set.pacels);
-        // console.log("intention queue:", this.intention_queue, this.intention_queue.length == 0 );
+        
         if(this.intention_queue.length == 0){
             // console.log("queue 0: ", predicate, this.belief_set.parcels)
             this.intention_queue.push(new Intention( this, predicate, this.plans, this.belief_set ));
@@ -209,20 +198,67 @@ export class IntentionRevisionRevise extends IntentionRevision {
     }
 
     isValid ( intention ) {
+        const me = this.belief_set.me;
         const my_id = this.belief_set.me.id;
-        // console.log("isValid parcels: ", this.belief_set.parcels);
+        const steps_number = this.belief_set.steps_per_decay;
+        let actual_steps;
+        const accessible_tiles = this.belief_set.accessible_tiles;
         switch (intention.predicate[0]){
             case 'go_pick_up':
-                const parcel = this.belief_set.getParcel(intention.predicate[3])
-                return parcel && parcel.carriedBy != my_id; 
+                const parcel = this.belief_set.getParcel(intention.predicate[3]);
+                if(!parcel)
+                    return false;
+                let reachable = true;
+                try {
+                    actual_steps = (
+                    BFS([me.x,me.y],[parcel.data.x,parcel.data.y],accessible_tiles).length 
+                    + 
+                    nearestDeliveryTile(parcel.data.x,parcel.data.y,this.belief_set.delivery_map, accessible_tiles).length
+                    );
+                } catch(err){
+                    // console.log("not possible to do BFS in validating the intention: ", err);
+                    // console.log("maps",this.belief_set.accessible_tiles,this.belief_set.agents);
+                    // console.log("how many tiles are removed?: ",this.belief_set.original_map.length -  this.belief_set.accessible_tiles.length )
+                    // process.exit()//REMOVE
+                    return false;
+                }
+                console.log("steps_number: ", steps_number, "actual steps: ", actual_steps);
+                if(steps_number){
+                    if(parcel.timedata.elapsed * steps_number < actual_steps){
+                        console.log(parcel, "not reachable");
+                        reachable = false;
+                    }
+                }
+                if(parcel && !parcel.carriedBy && reachable)
+                    console.log("valid intention: ", intention.predicate);
+                return parcel && !parcel.carriedBy != my_id && reachable; 
                 break;
             case 'delivery':
+                //deliver only if you arrive to the delivery tile on time
                 let counter = 0;
-                // console.log("isValid: ",this.belief_set.parcels)
+                try{
+                    actual_steps = nearestDeliveryTile(me.x,me.y,this.belief_set.delivery_map, accessible_tiles).length;}
+                catch(err){
+                    console.log("not able to do BFS in isValid: ", err);
+                    return false;
+                }
+                // console.log("isValid: ",my_id, this.belief_set.parcels);
                 this.belief_set.parcels.forEach((parcel) => {
                     // console.log("isValid carriedBy: ", parcel.data.carriedBy);
-                    if(parcel.data.carriedBy == my_id) counter++
+                    if(parcel.data.carriedBy == my_id) {
+                        //if i have a decay not infinite
+                        if(steps_number){
+                                if(parcel.timedata.elapsed * steps_number > actual_steps){
+                                counter++;
+                            }
+                        }
+                        else{
+                            counter++;
+                        }
+                    }
                 })
+                if(counter > 0)
+                    console.log("valid intention", intention.predicate);
                 return counter > 0;
                 break;
             case 'wandering':
