@@ -66,4 +66,8 @@ export default class Comunication {
       }
     });
   }
+
+  
+
+  
 }

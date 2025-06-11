@@ -9,9 +9,7 @@ export class Beliefset {
 
     //beliefset ha un attrributo che si chiama parcels
     #me
-    
     #settings
-
     #original_map
     #accessible_tiles
     #delivery_map
