@@ -31,17 +31,7 @@ export class Intention{
     }
     #predicate;
 
-    // /**
-    //  * @param {this | this} parent
-    //  * @param {string[]} predicate
-    //  * @param {PlanLibrary} [plan_library]
-    //  */
-    // constructor ( parent, predicate, plan_library) {
-    //     this.#parent = parent;
-    //     this.#predicate = predicate;
-    //     this.#plans = plan_library.plans;
-    //     this.#belief_set = plan_library.belief_set;
-    // }
+    
 
     constructor ( parent, predicate, plans, belief_set) {
         this.#parent = parent;
@@ -211,8 +201,40 @@ export class IntentionRevision {
 
     isValid( intention ) { }
 
+    get current_reward() {
+        let reward = 0;
+        this.#belief_set.parcels.forEach(p => {
+            if(p.data.carriedBy && p.data.carriedBy == this.#belief_set.me.id)
+                reward += p.timedata.elapsed;
+        })
+        return reward;
+    }
+
     log ( ...args ) {
         console.log( ...args )
     }
 
 }
+
+/*
+missing the carried parcel decay penalty, add as a separate feature
+Replan function
+form a belief_set -> plan and execute 
+a flag will tell me if I should replan, so break the plan and call a new plan
+finally set a Timeout for the replan flag
+
+idea rn:
+1. start with std. wandering loop, until you want to pick_up more than n parcels(5 ex)
+2. when the condition is met, switch to the planner, plan the intention to execute
+3. execute the plan
+    3.1 replan when a better parcel is encounter(set a timeout before replanning)
+    3.2 replan when the parcel has decayed or taken from another agent(set a timeout before replanning)
+    3.3 switch back to normal if a plan completely fail(set timeout before replanning)
+4. come back to wandering
+
+modify the push function while looping through the plan
+- if I spot a better parcel than the one I am going to take -> replan
+    - wait at least 2 seconds before replanning
+- otherwise ignore everything else
+
+*/

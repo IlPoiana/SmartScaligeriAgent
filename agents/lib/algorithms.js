@@ -7,6 +7,13 @@ function _distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     return dx + dy;
 }
 
+/**returns an array with the four nearby tiles coordinates*/
+export function neighbours(tile){
+    const t_x = tile.x;
+    const t_y = tile.y;
+    return [{x:t_x-1, y: t_y},{x:t_x+1, y: t_y},{x:t_x,y: t_y+1},{x:t_x, y: t_y-1}]
+}
+
 /**
  * 
  * @param {AgentData} me an object representing the position where I am
