@@ -1,10 +1,10 @@
 import { spawn } from 'child_process';
 
-const ssa1 = { id: 'e083aa6f59e', name: 'ema',
+const ssa1 = { id: 'f18a69', name: 'ema',
 token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxOGE2OSIsIm5hbWUiOiJlbWEiLCJ0ZWFtSWQiOiI2ZTM5Y2UiLCJ0ZWFtTmFtZSI6IlNTQSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4OTYyNzU1fQ.4Jly20BPBTs30oGwO9vgTR3fCmSoenQA6VF9yXz9jbs'
 };
 
-const ssa2 = { id: '1d74b61b883', name: 'stephany',
+const ssa2 = { id: 'ce777a', name: 'stephany',
 token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNlNzc3YSIsIm5hbWUiOiJzdGVwaGFueSIsInRlYW1JZCI6IjAxY2IzNCIsInRlYW1OYW1lIjoiU1NBIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NDg5NjI3NjR9.wmCvICoQq2a2MSdSdMP6VmQUIWg-_k-EF9ql6BzVK5o'
 };
 
@@ -17,7 +17,7 @@ function spawnProcesses( me, teamMate ) {
     
     // ssa1 e083aa6f59e
     const childProcess = spawn(
-        `node ../main_local \
+        `node ../main_local_comunication \
         host="http://localhost:8080/" \
         token="${me.token}" \
         teamId="${teamMate.id}" `,
