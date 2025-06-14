@@ -239,6 +239,7 @@ export class IntentionRevisionRevise extends IntentionRevision {
                 try{
                     actual_steps = nearestDeliveryTile(me.x,me.y,this.belief_set.delivery_map, accessible_tiles).length;}
                 catch(err){
+                    //here to do the managment of the delivery with comunication
                     console.log("not able to do BFS in isValid: ", err);
                     return false;
                 }

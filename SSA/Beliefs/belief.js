@@ -123,6 +123,8 @@ export class Beliefset {
         this.#settings = value;
     }
 
+    
+
     async onReady(callback){
         Promise.all([this.#map_promise, this.#settings_promise, this.#me_promise])
             .then(() => {

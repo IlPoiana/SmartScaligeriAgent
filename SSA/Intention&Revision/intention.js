@@ -31,18 +31,6 @@ export class Intention{
     }
     #predicate;
 
-    // /**
-    //  * @param {this | this} parent
-    //  * @param {string[]} predicate
-    //  * @param {PlanLibrary} [plan_library]
-    //  */
-    // constructor ( parent, predicate, plan_library) {
-    //     this.#parent = parent;
-    //     this.#predicate = predicate;
-    //     this.#plans = plan_library.plans;
-    //     this.#belief_set = plan_library.belief_set;
-    // }
-
     constructor ( parent, predicate, plans, belief_set) {
         this.#parent = parent;
         this.#predicate = predicate;
@@ -216,3 +204,4 @@ export class IntentionRevision {
     }
 
 }
+

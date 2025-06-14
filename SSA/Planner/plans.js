@@ -1,5 +1,6 @@
 import { distance, move, BFS, nearestDeliveryTile, wandering, wanderingRoundRobin, nearestSpawningTile} from "../../agents/lib/algorithms.js";
 import { Beliefset } from "../Beliefs/belief.js";
+import { Comunication } from "../Coordination/comunication.js";
 // 1 change with the more updated wandering DONE
 // 2 fix idle condition
 // 3 fix subPlan queue
@@ -12,12 +13,14 @@ export class PlanLibrary {
     constructor(){
         this.#plans.push( GoPickUp )
         this.#plans.push( BFSMove )
-        this.#plans.push( Delivery)
+        //this.#plans.push( Delivery)
+        this.#plans.push( MultiDelivery )
         this.#plans.push( Wandering)
         this.#plans.push( PickUp)
         this.#plans.push( PutDown)
         this.#plans.push( Idle)
         this.#plans.push( WanderingFurthest);
+        //this.#plans.push (MultiWandering)
     }
 
     get belief_set(){
@@ -42,7 +45,7 @@ export class PlanLibrary {
 }
 
 
-class Plan {
+export class Plan {
     #belief_set;
 
     //Remove--
@@ -165,7 +168,7 @@ class BFSMove extends Plan {
         if ( this.stopped ) {return false;};
         let path = BFS([me.x,me.y], [x,y], this.belief_set.accessible_tiles)
         //console.log("finished BFS", path);
-        if(path && path.length > 1)
+        if(path && path.length > 1){
             for ( let i = 0; i < path.length; i++ ) {
                 if ( this.stopped ) {return false;};
                 const next_tile = path[i];
@@ -177,6 +180,7 @@ class BFSMove extends Plan {
 
                 await move(me, next_tile, this.belief_set.client);
             }
+        }
         else return false;
         return true;
     }
@@ -229,6 +233,19 @@ class Delivery extends Plan {
         super(parent, belief_set);
     }
 
+    /**
+     *  Finds the closest spawning (tile) location from the agent’s current position.
+     *
+     * 1. Calls the shared helper `nearestSpawningTile(x, y, spawningMap, accessibleTiles)`
+     *    which returns a full step-by-step path (array of {x,y} points) to the nearest spawn.
+     * 2. Takes the first element of that path as the “spawn tile” itself.
+     * 3. Computes the Manhattan distance from the agent’s current {x,y} to that spawn tile.
+     *
+     * @returns {{
+     *   path: {x:number,y:number}[],   // the full route to the nearest spawn
+     *   distance: number               // the Manhattan distance to that spawn tile
+     * }}
+     */
     nearestSpawningTile(){
         const path = nearestSpawningTile(this.belief_set.me.x, this.belief_set.me.y, this.belief_set.spawning_map, this.belief_set.accessible_tiles);
         const spawn_tile = {x:path[0].x, y:path[0].y};
@@ -351,6 +368,7 @@ class Wandering extends Plan {
     }
 }
 
+//deprecated
 class WanderingFurthest extends Plan {
 
     constructor(parent, belief_set){
@@ -383,7 +401,7 @@ class WanderingFurthest extends Plan {
 
                 if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
                     console.log("next tile not available");
-                    await this.subPlan( Wandering,['wandering'],this.belief_set);
+                    await this.subPlan( Wandering,['wandering'],this.belief_set)
                     return true
                 }
 
@@ -445,6 +463,9 @@ class PutDown extends Plan{
     }
 }
 
+/**
+ * make the agent to wait 1 second
+ */
 class Idle extends Plan{
 
     constructor(parent, belief_set){
@@ -462,3 +483,167 @@ class Idle extends Plan{
         }, 1000);
     }
 }
+
+/**
+ * here we will introduce subclasses dedicated for multi agents plans
+ */
+class MultiDelivery extends Delivery {
+
+    constructor(parent, belief_set, multi_agent_belief){
+        super(parent, belief_set);
+        multi_agent_belief = multi_agent_belief
+    }
+
+    get multi_agent_belief(){ return this.multi_agent_belief}
+
+    /**
+     * 
+     * @returns 
+     */
+    nearestSpawningTile(){
+        const path = nearestSpawningTile(this.belief_set.me.x, this.belief_set.me.y, this.belief_set.spawning_map, this.belief_set.accessible_tiles);
+        const spawn_tile = {x:path[0].x, y:path[0].y};
+        const tile_distance = distance(this.belief_set.me,spawn_tile);
+        return {path: path, distance: tile_distance};
+    }
+
+    static isApplicableTo ( delivery ) {
+        return delivery == 'delivery';
+    }
+    //CHANGE, missing the smarter usage of the generated path
+    async execute ( delivery) {
+        const me = this.belief_set.me;
+        let target_x; let target_y;
+        let path;
+        let spawn_tile_data;
+        let threshold_distance;
+        const ask_deliver = new Comunication(this.belief_set, this.multi_agent_belief.team_id, this.multi_agent_belief)
+
+        if ( this.stopped ) {return false;}
+        const target_array = this.belief_set.delivery_map.slice();
+        target_array.sort((a,b) => {
+            return distance(a, me) - distance(b,me);
+        })
+        
+        for(let [idx, delivery_tile] of target_array.entries()){
+            target_x = delivery_tile.x;
+            target_y = delivery_tile.y;
+        
+            let put_down = true;
+            try{
+                path = BFS([me.x,me.y],[target_x, target_y],this.belief_set.accessible_tiles);
+
+        
+            }catch(err){
+                console.log("broken BFS", err);
+                return false;
+            }
+            if(path){
+                if(path.length > 1)
+                    for ( let i = 0; i < path.length; i++ ) {
+                        if ( this.stopped ) {return false;}
+                        const next_tile = path[i];
+
+                        if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
+                            console.log("next tile not available, switching delivery tile");
+                            return await this.subPlan(MultiDelivery, ['delivery'], this.belief_set);
+                        }
+
+                        await move(me, next_tile, this.belief_set.client);
+                    }
+            }
+            else {
+                console.log("CHECK ------> PATH NO BUONO")
+                await ask_deliver.onShout()
+                spawn_tile_data = this.nearestSpawningTile();
+/*                 threshold_distance = spawn_tile_data.distance;
+                if(distance(me,delivery_tile) > threshold_distance){
+                    return await this.subPlan(Wandering, ['wandering'], this.belief_set);
+                } */
+                console.log("not able to go", [target_x, target_y], me, path);
+                put_down = false;
+            }
+            if(put_down)
+                return await this.subPlan(PutDown,['put_down'], this.belief_set).then((res) => {return res}).catch((err) => {console.log(err); return false})
+
+        }
+    }
+    
+}
+
+/**
+ * this class will extend the wandering in order to be able to use it in coordination with the other agent
+ */
+class MultiWandering extends Plan{
+
+    constructor(parent, belief_set){
+        super(parent, belief_set);
+    }
+
+    //CHANGE, missing the smarter usage of the generated path
+    async execute ( desire ) {
+        // console.log("in wandering",this.belief_set.me);
+        const me = this.belief_set.me;
+        let target_x; let target_y;
+        let target_array = [];
+        let path;
+        let fail_counter;
+
+        //the two agents will divide the map into 2 parts
+        const midX = this.belief_set.settings.x / 2;
+
+        // costruisci l’array di tiles a seconda del ruolo
+        // need to address the case of 1 column problem
+        const filteredTiles = this.belief_set.accessible_tiles.filter(tile => {
+        switch (me.role) {
+            case 'MASTER':
+            // la metà sinistra
+            return tile.x < midX;
+            case 'SLAVE':
+            // la metà destra
+            return tile.x >= midX;
+            default:
+            // ruolo vuoto o non riconosciuto: includi tutti i tiles
+            return true;
+        }
+        });
+
+        target_array = wanderingRoundRobin(me, filteredTiles);
+
+        fail_counter = target_array.length;
+
+        if ( this.stopped ) {return false;}
+        
+        for([target_x, target_y] of target_array){
+            try{
+                path = BFS([me.x,me.y],[target_x, target_y],this.belief_set.accessible_tiles);
+        
+            }catch(err){
+                console.log("broken BFS", err);
+                return false;
+            }
+            if(path && path.length > 1){
+                for ( let i = 0; i < path.length; i++ ) {
+                    if ( this.stopped ) {return false;}
+                    const next_tile = path[i];
+
+                    if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
+                        console.log("next tile not available");
+                        break;
+                    }
+
+                    await move(me, next_tile, this.belief_set.client);
+                }       
+            }
+            else if(path.length != 1){
+                // console.log("accessible tiles", this.belief_set.accessible_tiles, [target_x, target_y], me, path);
+                console.log("not able to go", [target_x, target_y], me, path);
+                fail_counter--;
+            }
+        }    
+        return false
+    }
+}
+
+
+
