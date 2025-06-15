@@ -14,6 +14,7 @@ export class IntentionRevisionRevise extends IntentionRevision {
         this.last_delivery_position = null; // salva la posizione x,y
     }
 
+
     parcelRewardFun(predicate) {
         const id_p = predicate[3]
         let parcel = this.belief_set.getParcel(id_p)
@@ -102,7 +103,11 @@ export class IntentionRevisionRevise extends IntentionRevision {
         })
     }
 
-    
+    /**
+     * 
+     * @param {Array<any>} predicate 
+     * Method to push agent intentions, it handles the correct insertion in the intention queue through a reward function
+     */
     async push ( predicate ) {
         const intention_name = predicate[0];
         
@@ -231,7 +236,7 @@ export class IntentionRevisionRevise extends IntentionRevision {
                 }
                 if(parcel && !parcel.carriedBy && reachable)
                     console.log("valid intention: ", intention.predicate);
-                return parcel && !parcel.carriedBy != my_id && reachable; 
+                return parcel && !parcel.carriedBy && reachable; 
                 break;
             case 'delivery':
                 //deliver only if you arrive to the delivery tile on time

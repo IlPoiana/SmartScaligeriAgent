@@ -4,6 +4,7 @@ import { AgentData } from "./AgentData.js";
 import { DeliverooMap } from "./mapBeliefs.js";
 import { removeAgentTiles } from "../../agents/lib/algorithms.js";
 import { getNumber, removeWalls } from "../../agents/lib/algorithms.js";
+import { log } from "console";
 
 export class Beliefset {
 
@@ -162,7 +163,7 @@ export class Beliefset {
         })
     }
 
-    onParcelSensing( pushCallback) {
+    onParcelSensingOld( pushCallback) {
         this.#client.onParcelsSensing( async ( perceived_parcels ) => {
             let found_new = false
             const now = Date.now(); //initialize all the percieved parcels at the same time
@@ -178,6 +179,33 @@ export class Beliefset {
                     await pushCallback(predicate);
                     found_new = false;
               }
+            }
+        })
+    }
+
+    onParcelSensing( pushCallback, checkCallback) {
+        this.#client.onParcelsSensing( async ( perceived_parcels ) => {
+            let found_new = false
+            const now = Date.now(); //initialize all the percieved parcels at the same time
+            for (const p of perceived_parcels) {
+                    
+                if(!this.#parcels.has(p.id) && !p.carriedBy){
+                    found_new = true
+                }
+                //map of parcels id and parcel data and timedata
+                this.#parcels.set( p.id, {data:p,timedata:{startTime: now / 1e3,elapsed: p.reward}});
+                   
+                if(found_new){
+                    let predicate = [ 'go_pick_up', p.x, p.y, p.id]
+                    await pushCallback(predicate);
+                    found_new = false;
+                }
+
+                if(!p.carriedBy && p.x == this.#me.x && p.y == this.#me.y){
+                    const format_p = {data:p,timedata:{startTime: now / 1e3,elapsed: p.reward}};
+                    let response = await checkCallback(format_p);
+                    // console.log("response: ",response);
+                }
             }
         })
     }

@@ -143,9 +143,10 @@ class GoPickUp extends Plan {
     async execute ( go_pick_up, x, y ) {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             // console.log("BFSMove: ", this.belief_set.me);
-            await this.subPlan( BFSMove, ['go_to', x, y], this.belief_set );
+            let at_destination = await this.subPlan( BFSMove, ['go_to', x, y], this.belief_set );
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
-            await this.subPlan(PickUp, ['pick_up'], this.belief_set);
+            if(at_destination)
+                await this.subPlan(PickUp, ['pick_up'], this.belief_set);
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             return true;
     }
@@ -161,7 +162,7 @@ class BFSMove extends Plan {
     static isApplicableTo ( go_to, x, y ) {
         return go_to == 'go_to';
     }
-    //CHANGE, missing the smarter usage of the generated path
+
     async execute ( go_to, x, y ) {
         const me = this.belief_set.me;
         // console.log("BFSMove me: ", this.belief_set.me);
@@ -174,11 +175,16 @@ class BFSMove extends Plan {
                 const next_tile = path[i];
 
                 if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
-                    await this.subPlan( BFSMove,['go_to', x, y], this.belief_set);
-                    return true
+                    return await this.subPlan( BFSMove,['go_to', x, y], this.belief_set);
                 }
 
-                await move(me, next_tile, this.belief_set.client);
+                let result = await move(me, next_tile, this.belief_set.client);
+                if(result == false){
+                    // console.log("move",[me.x,me.y],"to",next_tile ,"failed!", this.belief_set.accessible_tiles);
+                    // console.log(await move(me, next_tile, this.belief_set.client));
+                    
+                    return await this.subPlan( BFSMove,['go_to', x, y], this.belief_set);
+                }
             }
         }
         else return false;
@@ -290,10 +296,16 @@ class Delivery extends Plan {
 
                         if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
                             console.log("next tile not available, switching delivery tile");
-                            return await this.subPlan(Delivery, ['delivery'], this.belief_set);
+                            put_down = false;
+                            break;
+                            // return await this.subPlan(Delivery, ['delivery'], this.belief_set);
                         }
 
-                        await move(me, next_tile, this.belief_set.client);
+                        let result = await move(me, next_tile, this.belief_set.client);
+                        if(result == false){
+                            put_down = false;
+                            break;
+                        }
                     }
             }
             else {
@@ -354,7 +366,9 @@ class Wandering extends Plan {
                         break;
                     }
 
-                    await move(me, next_tile, this.belief_set.client);
+                    let result = await move(me, next_tile, this.belief_set.client);
+                    if(result == false)
+                        break;
                 }       
             }
             else if(path.length != 1){

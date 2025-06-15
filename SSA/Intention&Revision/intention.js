@@ -31,6 +31,8 @@ export class Intention{
     }
     #predicate;
 
+    
+
     constructor ( parent, predicate, plans, belief_set) {
         this.#parent = parent;
         this.#predicate = predicate;
@@ -142,6 +144,33 @@ export class IntentionRevision {
         this.#intention_queue = intention_q.slice();
     }
 
+    /**
+     * 
+     * @param {any} parcel a parcel to be checked if it's already scheduled to pick up
+     *  Call this function when you are on a parcel, it's check if my actual intention is pick it up or not
+     */
+    checkParcel( parcel ){
+        if(this.current_intention && this.current_intention.predicate){
+            const predicate = this.current_intention.predicate;
+            const current_p_id = predicate[3];
+            console.log("checkParcel: ", predicate, current_p_id);
+            return predicate[0] == 'go_pick_up' && predicate[3] && parcel.data.id == current_p_id
+        }
+        else return true;
+    } 
+
+    async pickUpNotScheduledParcel( parcel ){
+        if(!this.checkParcel(parcel)){
+            console.log("picking up parcel on the way");
+            console.log("before pickup: ", this.#belief_set.me, parcel)
+            return await this.#belief_set.client.emitPickup()
+        }
+        else{
+            return;
+        }
+            
+    }
+
     updateElapsed() {
         // console.log("updating");
         const now = Date.now();
@@ -199,9 +228,40 @@ export class IntentionRevision {
 
     isValid( intention ) { }
 
+    get current_reward() {
+        let reward = 0;
+        this.#belief_set.parcels.forEach(p => {
+            if(p.data.carriedBy && p.data.carriedBy == this.#belief_set.me.id)
+                reward += p.timedata.elapsed;
+        })
+        return reward;
+    }
+
     log ( ...args ) {
         console.log( ...args )
     }
 
 }
 
+/*
+missing the carried parcel decay penalty, add as a separate feature
+Replan function
+form a belief_set -> plan and execute 
+a flag will tell me if I should replan, so break the plan and call a new plan
+finally set a Timeout for the replan flag
+
+idea rn:
+1. start with std. wandering loop, until you want to pick_up more than n parcels(5 ex)
+2. when the condition is met, switch to the planner, plan the intention to execute
+3. execute the plan
+    3.1 replan when a better parcel is encounter(set a timeout before replanning)
+    3.2 replan when the parcel has decayed or taken from another agent(set a timeout before replanning)
+    3.3 switch back to normal if a plan completely fail(set timeout before replanning)
+4. come back to wandering
+
+modify the push function while looping through the plan
+- if I spot a better parcel than the one I am going to take -> replan
+    - wait at least 2 seconds before replanning
+- otherwise ignore everything else
+
+*/
