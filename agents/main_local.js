@@ -16,6 +16,7 @@ belief_set.onReady(() => {
     my_agent.loop();
 })
 
-belief_set.onParcelSensing(async (val) => await my_agent.push(val));
+belief_set.onParcelSensing(async (val) => await my_agent.push(val),async (parcel) => await my_agent.pickUpNotScheduledParcel(parcel));
+// belief_set.onParcelSensingOld(async (val) => await my_agent.push(val));
 
 

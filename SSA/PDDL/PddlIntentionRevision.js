@@ -506,19 +506,6 @@ class PlanBeliefSet {
         myBeliefset.addFact('= (total-cost) 0');
         myBeliefset.addFact(`= (threshold) ${this.#threshold}`)
     
-        // console.log("CHECK 1:",myBeliefset.toPddlString());
-        // console.log("CHECK 2, goals: ", goals);
-        
-        // var pddlProblem = new MetricPddlProblem(
-        //     'parcel-delivery',
-        //     'SSA',
-        //     myBeliefset.objects.join(' '),
-        //     myBeliefset.toPddlString(),
-        //     goals,
-        //     'minimize (total-cost)'
-        // )
-
-        // goals += `(< (total-cost) ${threshold_cost})`;
 
         var pddlProblem = new MetricPddlProblem(
             'parcel-delivery',
@@ -613,12 +600,10 @@ export class PddlIntentionRevision extends IntentionRevisionRevise{
         let GoToClass = this.plans.filter((PlanClass) => {return PlanClass.isApplicableTo('go_to')})[0];
         let PutDownClass = this.plans.filter((PlanClass) => {return PlanClass.isApplicableTo('put_down')})[0];
         
-        const GoPickUp = new GoPickUpClass(this, this.belief_set);
-        const GoTo = new GoToClass(this, this.belief_set);
-        const PutDown = new PutDownClass(this, this.belief_set);
-        
         for(let action_obj of plan){
             if (this.#Replan) {this.#Replan = false; console.log("replanning");await this.getAndExecutePlan();return false}
+            
+            
             if(action_obj.action){
                 const action_name = action_obj.action;
                 const action_arr = action_obj.args;
@@ -628,11 +613,14 @@ export class PddlIntentionRevision extends IntentionRevisionRevise{
                     let [_,x,y] = action_arr[2].split('-');
                     const p_id = action_arr[1];
                     this.current_intention = new Intention(this,['go_pick_up', x, y,p_id],this.plans,this.belief_set);
+                    const GoPickUp = new GoPickUpClass(this, this.belief_set);
                     await GoPickUp.execute('go_pick_up',Number(x),Number(y))
                 }
                 
                 //deliver
                 if(action_name == 'deliver'){
+                    const GoTo = new GoToClass(this, this.belief_set);
+                    const PutDown = new PutDownClass(this, this.belief_set);
                     let [_,x,y] = action_arr[3].split('-');
                     this.current_intention = new Intention(this,['delivery'],this.plans,this.belief_set);
                     await GoTo.execute('go_to',Number(x),Number(y));

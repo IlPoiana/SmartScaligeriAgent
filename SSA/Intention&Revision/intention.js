@@ -144,6 +144,33 @@ export class IntentionRevision {
         this.#intention_queue = intention_q.slice();
     }
 
+    /**
+     * 
+     * @param {any} parcel a parcel to be checked if it's already scheduled to pick up
+     *  Call this function when you are on a parcel, it's check if my actual intention is pick it up or not
+     */
+    checkParcel( parcel ){
+        if(this.current_intention && this.current_intention.predicate){
+            const predicate = this.current_intention.predicate;
+            const current_p_id = predicate[3];
+            console.log("checkParcel: ", predicate, current_p_id);
+            return predicate[0] == 'go_pick_up' && predicate[3] && parcel.data.id == current_p_id
+        }
+        else return true;
+    } 
+
+    async pickUpNotScheduledParcel( parcel ){
+        if(!this.checkParcel(parcel)){
+            console.log("picking up parcel on the way");
+            console.log("before pickup: ", this.#belief_set.me, parcel)
+            return await this.#belief_set.client.emitPickup()
+        }
+        else{
+            return;
+        }
+            
+    }
+
     updateElapsed() {
         // console.log("updating");
         const now = Date.now();

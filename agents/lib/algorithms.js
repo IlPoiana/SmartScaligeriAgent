@@ -24,20 +24,26 @@ export function neighbours(tile){
 export async function move(me,next_tile, client){
     const dx = next_tile.x - me.x;
     const dy = next_tile.y - me.y;
+    let move_outcome;
     if( dx != 0){
         if(dx > 0){
-            await client.emitMove("right").catch((err) => console.log("cannot go right"))
+            // console.log("right")
+            return client.emitMove("right").catch((err) => console.log("cannot go right"))
         } else {
-            await client.emitMove("left").catch((err) => console.log("cannot go left"))
+            // console.log("left")
+            return client.emitMove("left").catch((err) => console.log("cannot go left"))
         }
     }
     if( dy != 0){
         if(dy > 0){
-            await client.emitMove("up").catch((err) => console.log("cannot go up"))
+            // console.log("up")
+            return client.emitMove("up").catch((err) => console.log("cannot go up"))
         } else {
-            await client.emitMove("down").catch((err) => console.log("cannot go down"))
+            // console.log("down")
+            return client.emitMove("down").catch((err) => console.log("cannot go down"))
         }
     }
+   
 }
 
 const _rmwalls = function removeWalls(tiles){
