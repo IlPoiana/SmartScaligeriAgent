@@ -17,7 +17,7 @@ function spawnProcesses( me, teamMate ) {
     
     // ssa1 e083aa6f59e
     const childProcess = spawn(
-        `node ../main_communication \
+        `node ../Promise_playground \
         host="http://localhost:8080/" \
         token="${me.token}" \
         teamId="${teamMate.id}" `,

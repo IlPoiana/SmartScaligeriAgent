@@ -154,7 +154,7 @@ export class IntentionRevision {
             const predicate = this.current_intention.predicate;
             const current_p_id = predicate[3];
             console.log("checkParcel: ", predicate, current_p_id);
-            return predicate[0] == 'go_pick_up' && predicate[3] && parcel.data.id == current_p_id
+            return (predicate[0] == 'go_pick_up' && predicate[3] && parcel.data.id == current_p_id) || predicate[0] == 'wandering'
         }
         else return true;
     } 
@@ -163,11 +163,9 @@ export class IntentionRevision {
         if(!this.checkParcel(parcel)){
             console.log("picking up parcel on the way");
             console.log("before pickup: ", this.#belief_set.me, parcel)
-            return await this.#belief_set.client.emitPickup()
+            await this.#belief_set.client.emitPickup()            
         }
-        else{
-            return;
-        }
+        return;
             
     }
 

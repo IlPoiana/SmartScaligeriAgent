@@ -524,10 +524,14 @@ class PlanBeliefSet {
         let domain = await readFile('./fluents-domain.pddl' );
         // console.log(domain);
         // process.exit(0);
-        
+        try{
         var plan = await onlineSolver( domain, problem );
         // console.log(plan);
-        return plan;
+        return plan;}
+        catch(err){
+            console.log("Not able to find a plan: ", err);
+            return false;
+        }
         // const pddlExecutor = new PddlExecutor( { name: 'lightOn', executor: (l) => console.log('executor lighton '+l) } );
         // pddlExecutor.exec( plan );
     
@@ -537,8 +541,8 @@ class PlanBeliefSet {
 }
 
 export class PddlIntentionRevision extends IntentionRevisionRevise{
-    N = 2;
-    #replan_time = 5;
+    N = 5;
+    #replan_time = 25;
     #Pddl = false;
     #Replan = false;
     #canReplan = true;
@@ -578,12 +582,12 @@ export class PddlIntentionRevision extends IntentionRevisionRevise{
     }
 
     async getPlan(){
-        console.log("CHECK 1, intention queue : ");
-        this.intention_queue.map((intention) => console.log(intention.predicate));
+        // console.log("CHECK 1, intention queue : ");
+        // this.intention_queue.map((intention) => console.log(intention.predicate));
         this.intention_queue = [];
         this.current_intention = null;
-        console.log("CHECK 1, intention queue deleted: ");
-        this.intention_queue.map((intention) => console.log(intention.predicate));
+        // console.log("CHECK 1, intention queue deleted: ");
+        // this.intention_queue.map((intention) => console.log(intention.predicate));
         
         //prepare the data
         const plan_belief_set = new PlanBeliefSet(this.belief_set);

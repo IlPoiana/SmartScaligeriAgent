@@ -205,7 +205,7 @@ export class IntentionRevisionRevise extends IntentionRevision {
     isValid ( intention ) {
         const me = this.belief_set.me;
         const my_id = this.belief_set.me.id;
-        const steps_number = this.belief_set.steps_per_decay;
+        const steps_number = this.belief_set.steps_per_decay | 0;
         let actual_steps;
         const accessible_tiles = this.belief_set.accessible_tiles;
         switch (intention.predicate[0]){
@@ -225,10 +225,11 @@ export class IntentionRevisionRevise extends IntentionRevision {
                     // console.log("maps",this.belief_set.accessible_tiles,this.belief_set.agents);
                     // console.log("how many tiles are removed?: ",this.belief_set.original_map.length -  this.belief_set.accessible_tiles.length )
                     // process.exit()//REMOVE
+                    console.log("BFS not found any path in isValid");
                     return false;
                 }
-                console.log("steps_number: ", steps_number, "actual steps: ", actual_steps);
-                if(steps_number){
+                console.log("steps_number: ", steps_number, "actual steps: ", actual_steps, parcel.timedata.elapsed);
+                if(steps_number != 0){
                     if(parcel.timedata.elapsed * steps_number < actual_steps){
                         console.log(parcel, "not reachable");
                         reachable = false;

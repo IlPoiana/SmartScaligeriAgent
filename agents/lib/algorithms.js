@@ -16,15 +16,14 @@ export function neighbours(tile){
 
 /**
  * 
- * @param {AgentData} me an object representing the position where I am
- * @param {import("@unitn-asa/deliveroo-js-client/lib/ioClientSocket.js").tile} next_tile the tile where I have to go
+ * @param {{x:number,y:number}} me an object representing the position where I am
+ * @param {{x:number,y:number}} next_tile the tile where I have to go
  * @param {DeliverooApi} client the client where to execute the move 
  * Executes a single move in the direction to reach next_tile, which is 1 tile away
  */
 export async function move(me,next_tile, client){
     const dx = next_tile.x - me.x;
     const dy = next_tile.y - me.y;
-    let move_outcome;
     if( dx != 0){
         if(dx > 0){
             // console.log("right")
@@ -42,6 +41,9 @@ export async function move(me,next_tile, client){
             // console.log("down")
             return client.emitMove("down").catch((err) => console.log("cannot go down"))
         }
+    }
+    else{
+        return true;
     }
    
 }
@@ -112,6 +114,13 @@ function nearestSpawningTile(x,y,spawning_map,map){
     return BFS([x,y], [spawn_map[0].x,spawn_map[0].y],map);
 }
 
+/**
+ * 
+ * @param {*} start 
+ * @param {*} target 
+ * @param {*} map 
+ * @returns an array of lenght 1 if my position has already been achieved, `null` if no path have been found
+ */
 function BFS(start,target,map){
     const x = Math.round(start[0]);
     const y = Math.round(start[1]);

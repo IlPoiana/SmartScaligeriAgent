@@ -1,10 +1,9 @@
-import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
+
 import { Beliefset } from "../Beliefs/belief.js";
-import { default as argsParser } from "args-parser";
 import { AgentData } from "../Beliefs/AgentData.js";
 import { MultiAgentBeliefSet } from "../Beliefs/MultiAgentBelief.js";
-import { Intention, IntentionRevision } from "../Intention&Revision/intention.js";
 import { distance, nearestDeliveryTile } from "../../agents/lib/algorithms.js";
+import { EventEmitter } from 'events'
 
 /**
  * Gestisce la logica di “ask/say” tra due agenti.
@@ -15,7 +14,7 @@ import { distance, nearestDeliveryTile } from "../../agents/lib/algorithms.js";
  * 2. se non rieco a fare il pickup chiedere se l'altro agente può farlo
  * 3. se non riesco a fare il put down chiedere se l'altro agente può farlo
  */
-export class Comunication{
+export class Communication{
 
   #companion_id;
   #belief_set;
@@ -116,6 +115,29 @@ export class Comunication{
   }
 
   /**
+   * 
+   * @returns the response to the SLAVE onMsg 
+   */
+  async updateTeam(){
+    const client = this.belief_set.client;
+    const me = this.belief_set.me;
+    const team_id = this.#team_id
+
+    if(me.role === 'MASTER') {
+      // console.log("I am the MASTER, I'll start the conversation");
+      let msg = {
+        data: me,
+        status: 'handshake'
+      }
+      // console.log("updating")
+      const slave_res = await client.emitAsk( team_id, msg);
+      this.#belief_multi_agent.updateMultiAgentBelif(slave_res?.status == 'ack_slave' ? slave_res : 'NONE')
+      return;
+
+    }
+  }
+
+  /**
    * Master will ask for handshaking sending a message of format {data:AgentData, status:String}
    * the Slave will recive the message, if the status is handshaking will save it in its multi_agent_belief,
    * will reply with its information to the Master with status ack_slave
@@ -124,12 +146,7 @@ export class Comunication{
   async handShaking() {
     //I will stay in hearing to hear the information emited by the other agent,
     // then I will reply with my id and position
-    /**
-     * 1. master ask for data to the slave with message handshake
-     * 2. slave reply with the data
-     * 3. slave ask for the data to the master
-     * 4. master reply with data
-     */
+    console.log("handshaking");
     
     const client = this.belief_set.client;
     const me = this.belief_set.me;
@@ -138,42 +155,46 @@ export class Comunication{
     //If I'm the master I'll ask for the information first
     // the slave will reply with its information 
     if(me.role === 'MASTER') {
-      console.log("I am the MASTER, I'll start the conversation");
+      // console.log("I am the MASTER, I'll start the conversation");
       let msg = {
         data: me,
         status: 'handshake'
       }
       const reply = client.emitAsk( team_id, msg).then((res)=>{
         this.#belief_multi_agent.updateMultiAgentBelif(res?.status == 'ack_slave' ? res : 'NONE')
-        console.log("reply from asking: ", res)
-        console.log("team data: ", this.#belief_multi_agent.team_data)
+        
+        // this.emitter.emit('master-handshake');
+        
+        // console.log("reply from asking: ", res)
+        // console.log("team data: ", this.#belief_multi_agent.team_data)
       })
       //console.log("reply: ", reply)
       //this.#belief_multi_agent.updateMultiAgentBelif(reply?.status == 'ack_slave' ? reply : 'NONE') 
 
     //if I'm the Slave I'll wait for the asking, I'll save the data from the asker and I'll reply with my information
     } else if(me.role === 'SLAVE') {
-      let ask_msg
-      console.log("I'm the Slave")
+      // console.log("I'm the Slave")
       //await new Promise( resolve => setTimeout(resolve, Math.random()*50) );
       client.onMsg( (id, name, /** @type {{data:AgentData, status:String}}*/msg, reply) =>{
-      console.log( "new message received from ", name+':', msg);
+      // console.log( "new message received from ", name+':', msg);
         if(msg?.status == 'handshake'){
 
-          //new Promise( resolve => setTimeout(resolve, 100))
-          if (reply) {
+          
             let answer = {
               data:this.belief_set.me,
               status:'ack_slave'
             };
-            //console.log("my reply: ", answer);
+            // console.log('slave handshake',msg)
+            this.#belief_multi_agent.updateMultiAgentBelif(msg)
             try { reply(answer) } catch { (error) => console.error(error) }
-          }
-          this.#belief_multi_agent.updateMultiAgentBelif(msg)
-          console.log("team data: ", this.#belief_multi_agent.team_data)
+          
+          // console.log("team data: ", this.#belief_multi_agent.team_data)
         } 
       })
     }
+    //tell to the master that we have set the onMsg listener
+    // this.emitter.emit('listener-ready');
+
   }
 
   askPickUp(){

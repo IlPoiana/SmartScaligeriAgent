@@ -4,7 +4,6 @@ import { AgentData } from "./AgentData.js";
 import { DeliverooMap } from "./mapBeliefs.js";
 import { removeAgentTiles } from "../../agents/lib/algorithms.js";
 import { getNumber, removeWalls } from "../../agents/lib/algorithms.js";
-import { log } from "console";
 
 export class Beliefset {
 
@@ -175,6 +174,7 @@ export class Beliefset {
                 //map of parcels id and parcel data and timedata
                 this.#parcels.set( p.id, {data:p,timedata:{startTime: now / 1e3,elapsed: p.reward}});
                 if(found_new){
+                    console.log("pushing go_pick_up")
                     let predicate = [ 'go_pick_up', p.x, p.y, p.id]
                     await pushCallback(predicate);
                     found_new = false;
@@ -196,14 +196,22 @@ export class Beliefset {
                 this.#parcels.set( p.id, {data:p,timedata:{startTime: now / 1e3,elapsed: p.reward}});
                    
                 if(found_new){
-                    let predicate = [ 'go_pick_up', p.x, p.y, p.id]
-                    await pushCallback(predicate);
+                    console.log("CHECK 0",p.x,p.y)
+                    if(p.x>= 0&& p.y >= 0)
+                    {
+                        let predicate = [ 'go_pick_up', p.x, p.y, p.id]
+                        await pushCallback(predicate);
+                    }
+                    else{
+                        console.log("parcel arrived with incomplete informations", p);
+                    }
                     found_new = false;
+                    
                 }
 
                 if(!p.carriedBy && p.x == this.#me.x && p.y == this.#me.y){
                     const format_p = {data:p,timedata:{startTime: now / 1e3,elapsed: p.reward}};
-                    let response = await checkCallback(format_p);
+                    await checkCallback(format_p);
                     // console.log("response: ",response);
                 }
             }
@@ -236,6 +244,7 @@ export class Beliefset {
 
     onAgentsSensing() {
         this.#client.onAgentsSensing( ( sensed_agents ) => {
+            // console.log("sensing agents");
             if(sensed_agents.length != 0){
                 for ( const a of sensed_agents)
                     if(a.id != this.#me.id) this.#agents.set(a.id, a);
