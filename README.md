@@ -32,6 +32,7 @@ A simple Node.js agent that connects to a Planning-as-a-Service (PaaS) backend r
 - **Node.js** v14 or newer  
 - **npm** (or **yarn**)  
 - `planning-as-a-service` [repository](https://github.com/AI-Planning/planning-as-a-service) to run locally the pddl solver instance 
+- `Deliveroo.js` [repository](https://github.com/unitn-ASA/Deliveroo.js.git) installed to run the server locally.
 
 ### 2. Installation
 
@@ -46,7 +47,7 @@ PDDL agent expects a backend (local or online) which exposes the API for solving
 
 1. Follow the given `README` file available in their repository to set up the service locally
 
-2. Copy the `.env` file present in the `PDDL/` directory to set up the solver time limit
+2. Copy the `.env` file present in the `classes/PDDL/` directory to the `server/` directory in `planning-as-a-server`. This is to set up the solver time limit.
 
 #### Run the Container
 To run the container be sure to be in the `server/` directory:
