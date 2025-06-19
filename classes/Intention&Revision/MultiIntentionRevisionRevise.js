@@ -1,6 +1,6 @@
 import { BFS, distance, move, nearestDeliveryTile } from "../../agents/lib/algorithms.js";
 import { Communication } from "../Coordination/Communication.js";
-import { PlanLibrary } from "../Planner/plans.js";
+import { PlanLibrary } from "../Plans/plans.js";
 import { IntentionRevisionRevise } from "./IntentionRevisionRevise.js";
 import { Intention } from "./intention.js";
 /*

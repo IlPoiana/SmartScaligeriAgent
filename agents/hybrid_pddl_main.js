@@ -4,9 +4,9 @@
 // process.env.PAAS_HOST = 'https://planner.cavic-fam.it';
 // process.env.PAAS_PATH = '/package/dual-bfws-ffparser/solve';
 
-import { Beliefset } from "../Beliefs/belief.js";
-import { PddlIntentionRevision } from "./PddlIntentionRevision.js";
-import { PlanLibrary } from "../Planner/plans.js";
+import { Beliefset } from "../classes/Beliefs/belief.js";
+import { PddlIntentionRevision } from "../classes/PDDL/PddlIntentionRevision.js";
+import { PlanLibrary } from "../classes/Plans/plans.js";
 
 
 const belief_set = new Beliefset("http://localhost:8080", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEzMGI4MiIsIm5hbWUiOiJQRERMIiwidGVhbUlkIjoiYWRmNmYyIiwidGVhbU5hbWUiOiJTU0EiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0OTkyNzM5Mn0.OAd89gOnc2G2jBWhZnoM38t2nw-shnm5a7zGaebLl0E");

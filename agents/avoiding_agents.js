@@ -1,7 +1,6 @@
 import { DeliverooApi, sleep } from "@unitn-asa/deliveroo-js-client";
 import { removeWalls,BFS, removeAgentTiles } from "./lib/algorithms.js"
 import { EventEmitter } from "events";
-import { default as argsParser } from "args-parser";
 
 
 //belief-set variables delcaration

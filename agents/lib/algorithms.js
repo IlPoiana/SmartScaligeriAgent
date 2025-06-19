@@ -1,5 +1,4 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
-import { AgentData } from "../../SSA/Beliefs/AgentData.js";
 
 function _distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     const dx = Math.abs( Math.round(x1) - Math.round(x2) )

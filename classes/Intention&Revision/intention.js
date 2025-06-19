@@ -1,4 +1,4 @@
-import { PlanLibrary } from "../Planner/plans.js";
+import { PlanLibrary } from "../Plans/plans.js";
 
 export class Intention{
     #plans;

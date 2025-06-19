@@ -1,9 +1,9 @@
-import { Beliefset } from "../SSA/Beliefs/belief.js";
-import { PlanLibrary } from "../SSA/Planner/plans.js";
-import { Communication } from "../SSA/Coordination/Communication.js";
+import { Beliefset } from "../classes/Beliefs/belief.js";
+import { PlanLibrary } from "../classes/Plans/plans.js";
+import { Communication } from "../classes/Coordination/Communication.js";
 import { default as argsParser } from "args-parser";
-import { MultiAgentBeliefSet } from "../SSA/Beliefs/MultiAgentBelief.js";
-import { MultiIntentionRevisionRevise } from "../SSA/Intention&Revision/MultiIntentionRevisionRevise.js";
+import { MultiAgentBeliefSet } from "../classes/Beliefs/MultiAgentBelief.js";
+import { MultiIntentionRevisionRevise } from "../classes/Intention&Revision/MultiIntentionRevisionRevise.js";
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 
 

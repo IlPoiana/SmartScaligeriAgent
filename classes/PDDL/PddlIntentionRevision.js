@@ -521,7 +521,7 @@ class PlanBeliefSet {
         // console.log( problem );
         
         //domain file
-        let domain = await readFile('./fluents-domain.pddl' );
+        let domain = await readFile('../classes/PDDL/fluents-domain.pddl' );
         // console.log(domain);
         // process.exit(0);
         try{
