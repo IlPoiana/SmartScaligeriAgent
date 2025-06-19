@@ -16,7 +16,7 @@ logs
 *.log
 
 # dotenv environment variables file
-.env
+# .env
 
 # binaries
 bin
