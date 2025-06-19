@@ -2,7 +2,7 @@ import { Beliefset } from "../classes/Beliefs/belief.js";
 import { IntentionRevisionRevise } from "../classes/Intention&Revision/IntentionRevisionRevise.js";
 import { PlanLibrary } from "../classes/Plans/plans.js";
 
-const belief_set = new Beliefset("http://localhost:8080", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ0MGQ1NiIsIm5hbWUiOiJyZWZhY3RvciIsInRlYW1JZCI6ImFkMmI2MSIsInRlYW1OYW1lIjoiU1NBIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NDg3NzQ0NTB9.pnl_SztMf3OIvLYDmKTQUl6a53vbtKbm44Ezb4f4Tko");
+const belief_set = new Beliefset("http://localhost:8080", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxOGE2OSIsIm5hbWUiOiJlbWEiLCJ0ZWFtSWQiOiI2ZTM5Y2UiLCJ0ZWFtTmFtZSI6IlNTQSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4OTYyNzU1fQ.4Jly20BPBTs30oGwO9vgTR3fCmSoenQA6VF9yXz9jbs");
 const plan_library = new PlanLibrary();
 plan_library.singleAgentPlans();
 plan_library.belief_set = belief_set;

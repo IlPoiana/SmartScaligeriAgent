@@ -38,6 +38,7 @@ A simple Node.js agent that connects to a Planning-as-a-Service (PaaS) backend r
 
 ```bash
 git clone https://github.com/IlPoiana/SmartScaligeriAgent.git
+npm install @unitn-asa/deliveroo-js-client@latest
 ```
 
 
@@ -61,19 +62,20 @@ sudo make
 Run:
 
 ```bash
-docker-compose up -d --scale worker=2
+docker compose up -d --scale worker=2
 ```
 
 To stop and remove:
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### 4. Run the agents
 #### API setup
+
 > [!Warning]
-> Remeber to change the token of the `DeliverooApi` before running any agents
+> Remeber to change the token the before running any agents, the token can be setted in every `main` file.
 
 
 #### single agent
@@ -95,5 +97,5 @@ node --env-file=.env hybrid_pddl_main.js
 
 ```bash
 cd agents/multi-agent/
-node simple_multi_agent.js
+node main_multi_agent.js
 ```
