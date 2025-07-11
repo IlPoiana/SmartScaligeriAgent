@@ -1,5 +1,11 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 
+/**
+ * 
+ * @param {*} param0: an Object with {x,y} attributes indicating a tile coordinates  
+ * @param {*} param1: an Object with {x,y} attributes indicating a tile coordinates
+ * @returns the Manhattan distance between the two input parameters
+ */
 function _distance( {x:x1, y:y1}, {x:x2, y:y2}) {
     const dx = Math.abs( Math.round(x1) - Math.round(x2) )
     const dy = Math.abs( Math.round(y1) - Math.round(y2) )
@@ -47,6 +53,11 @@ export async function move(me,next_tile, client){
    
 }
 
+/**
+ * 
+ * @param {*} tiles: a map of tiles
+ * @returns the same map without the "walls" tiles (type 0)
+ */
 const _rmwalls = function removeWalls(tiles){
     var available = [];
     tiles.forEach(elem => {
@@ -60,7 +71,12 @@ const _rmwalls = function removeWalls(tiles){
     return available;
 }
 
-
+/**
+ * 
+ * @param {*} agents: Array of agents objects 
+ * @param {*} map: map of tiles to filter 
+ * @returns the list of the passed `map` filtered by the agent map
+ */
 const _rmagenttiles = function removeAgentTiles(agents,map){
     var available = map.slice();
     agents.forEach((agent) => {
@@ -69,10 +85,15 @@ const _rmagenttiles = function removeAgentTiles(agents,map){
                 || tile.y !== Math.round(agent.y);
             });
     })
-    // console.log("accessible_tiles",available, "agents", agents);
+    
     return available;
 }
 
+/**
+ * 
+ * @param {*} tiles: a map of tiles
+ * @returns the same map without the "delivery" tiles (type 0)
+ */
 function destinationTiles(tiles){
     var delivery = [];
     tiles.forEach(elem => {
@@ -86,23 +107,30 @@ function destinationTiles(tiles){
 
     return delivery;
 }
-
+/**
+ * 
+ * @param {*} x: x starting position 
+ * @param {*} y: y starting position
+ * @param {*} delivery_map: delivery tile map
+ * @param {*} map: map of accessible tiles
+ * @returns the tiles path array nearest (accessible) Delivery tile 
+ */
 function nearestDeliveryTile(x,y, delivery_map,map){
     const delivery_tiles = delivery_map.slice();
     delivery_tiles.sort((a,b) => {
         return _distance({x:x, y:y},{x:a.x,y:a.y}) - _distance({x:x, y:y},{x:b.x,y:b.y})
     })
-    // console.log("sorted delivery: ",delivery_tiles);
     return BFS([x,y], [delivery_tiles[0].x,delivery_tiles[0].y],map);
 
 }
 
 /**
  * 
- * @param {number} x 
- * @param {number} y 
- * @param {*} spawning_map 
- * @param {*} map 
+ * @param {*} x: x starting position 
+ * @param {*} y: y starting position
+ * @param {*} spawning_map: delivery tile map
+ * @param {*} map: map of accessible tiles 
+ * @returns the tiles path array nearest (accessible) spawning tile
  */
 function nearestSpawningTile(x,y,spawning_map,map){
     const my_pos = {x:x, y:y};
@@ -291,9 +319,6 @@ function DFS(start, target, map){
         else{
             break;
         }
-
-        
-        // console.log(`sequence queue ${sequence}`);
     }
 
     return sequence;

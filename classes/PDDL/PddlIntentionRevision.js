@@ -541,8 +541,8 @@ class PlanBeliefSet {
 }
 
 export class PddlIntentionRevision extends IntentionRevisionRevise{
-    N = 5;
-    #replan_time = 25;
+    N = 3;
+    #replan_time = 30;
     #Pddl = false;
     #Replan = false;
     #canReplan = true;
