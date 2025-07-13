@@ -1,5 +1,4 @@
 // 'https://https://planner.cavic-fam.it';
-// 'http://localhost:5001';
 
 // process.env.PAAS_HOST = 'https://planner.cavic-fam.it';
 // process.env.PAAS_PATH = '/package/dual-bfws-ffparser/solve';
@@ -13,7 +12,6 @@ const belief_set = new Beliefset("http://localhost:8080", "eyJhbGciOiJIUzI1NiIsI
 const plan_library = new PlanLibrary();
 plan_library.belief_set = belief_set;
 plan_library.singleAgentPlans();
-// console.log("CHECK1: ", plan_library.belief_set.me);
 const my_agent = new PddlIntentionRevision(plan_library);
 
 belief_set.onReady(() => {
@@ -22,4 +20,3 @@ belief_set.onReady(() => {
 })
 
 belief_set.onParcelSensingOld(async (val) => await my_agent.push(val));
-// belief_set.onParcelSensing(async (val) => await my_agent.push(val),async (parcel) => await my_agent.pickUpNotScheduledParcel(parcel));

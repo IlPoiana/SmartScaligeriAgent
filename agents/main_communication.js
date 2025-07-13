@@ -17,10 +17,7 @@ plan_library.belief_set = belief_set;
 plan_library.multiAgentPlans();
 const multi_agent_belief = new MultiAgentBeliefSet()
 const comm = new Communication(belief_set, team_id, multi_agent_belief);
-// console.log("CHECK1: ", plan_library.belief_set.me);
 const my_agent = new MultiIntentionRevisionRevise(plan_library, comm);
-// const reachable_spawning_tiles = [];
-// const reachable_delivery_tiles = [];
 
 belief_set.onReady(async () => {
 
@@ -46,7 +43,6 @@ belief_set.onReady(async () => {
 
                 belief_set.onParcelSensingOld(async (val) => {
                     await my_agent.pushMulti(val)
-                    // console.log("my companion: ", multi_agent_belief.team_data)
                 });
                 reply();
             }
@@ -60,7 +56,6 @@ belief_set.onReady(async () => {
         const emit_till_the_apocalipse = async function (flag_obj) {
             setTimeout(() => flag_obj.flag = false, 500);
             while(flag_obj.flag && my_agent.delivery_tiles.length == 0){
-                // belief_set.client.emit('msg', team_id, 'name', {status: 'slave-ready'});
                 await belief_set.client.emitSay(team_id, {status: 'slave-ready'})
                 await new Promise(r => setTimeout(r,100))
             }
@@ -76,10 +71,6 @@ belief_set.onReady(async () => {
         await emit_till_the_apocalipse(flag_obj)
         console.log("friend believe set:", my_agent.friend_belive_set.team_data)
         my_agent.meetingMsgHandler()
-        
-        // belief_set.client.onYou(async() => {
-        //     const update_slave = await comm.updateTeam()
-        // })
 
         console.log("starting loop");
         my_agent.loop();
@@ -87,7 +78,6 @@ belief_set.onReady(async () => {
 
         belief_set.onParcelSensingOld(async (val) => {
             await my_agent.pushMulti(val)
-            // console.log("my companion: ", multi_agent_belief.team_data)
         });
     
     }

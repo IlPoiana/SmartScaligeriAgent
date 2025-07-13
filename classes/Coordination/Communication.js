@@ -5,15 +5,7 @@ import { MultiAgentBeliefSet } from "../Beliefs/MultiAgentBelief.js";
 import { distance, nearestDeliveryTile } from "../../agents/lib/algorithms.js";
 import { EventEmitter } from 'events'
 
-/**
- * Gestisce la logica di “ask/say” tra due agenti.
- * 
- * 1. fare il heand shaking, io chiedo qualcosa e l'altro deve rispondere giusto per passarmi l'id
- * 1.1 aggiornamento dei beliefset rispettivi ogni volta che si muovono, cosi so gia la posizione dell'altro, e per sapere in che parte
- * della mappa si trova e se puo fare la bfs
- * 2. se non rieco a fare il pickup chiedere se l'altro agente può farlo
- * 3. se non riesco a fare il put down chiedere se l'altro agente può farlo
- */
+
 export class Communication{
 
   #companion_id;
@@ -153,7 +145,7 @@ export class Communication{
     //If I'm the master I'll ask for the information first
     // the slave will reply with its information 
     if(me.role === 'MASTER') {
-      // console.log("I am the MASTER, I'll start the conversation");
+
       let msg = {
         data: me,
         status: 'handshake'
@@ -161,20 +153,12 @@ export class Communication{
       const reply = client.emitAsk( team_id, msg).then((res)=>{
         this.#belief_multi_agent.updateMultiAgentBelif(res?.status == 'ack_slave' ? res : 'NONE')
         
-        // this.emitter.emit('master-handshake');
-        
-        // console.log("reply from asking: ", res)
-        // console.log("team data: ", this.#belief_multi_agent.team_data)
       })
-      //console.log("reply: ", reply)
-      //this.#belief_multi_agent.updateMultiAgentBelif(reply?.status == 'ack_slave' ? reply : 'NONE') 
 
     //if I'm the Slave I'll wait for the asking, I'll save the data from the asker and I'll reply with my information
     } else if(me.role === 'SLAVE') {
-      // console.log("I'm the Slave")
-      //await new Promise( resolve => setTimeout(resolve, Math.random()*50) );
+
       client.onMsg( (id, name, /** @type {{data:AgentData, status:String}}*/msg, reply) =>{
-      // console.log( "new message received from ", name+':', msg);
         if(msg?.status == 'handshake'){
 
           
@@ -182,16 +166,13 @@ export class Communication{
               data:this.belief_set.me,
               status:'ack_slave'
             };
-            // console.log('slave handshake',msg)
             this.#belief_multi_agent.updateMultiAgentBelif(msg)
             try { reply(answer) } catch { (error) => console.error(error) }
           
-          // console.log("team data: ", this.#belief_multi_agent.team_data)
         } 
       })
     }
     //tell to the master that we have set the onMsg listener
-    // this.emitter.emit('listener-ready');
 
   }
 
@@ -214,34 +195,6 @@ export class Communication{
     })
     
   }
-
-  // /**
-  //  * method to be called if sensed a parcel but the BFS return a false because
-  //  * can't deliver, then I'll ask to the companion to do the action
-  //  */
-  // askToDeliver(){
-  //   const client = this.#belief_set.client
-  //   const team_id = this.#companion_id
-  //   const me = this.#belief_set.me
-
-  //   let reply = client.emitAsk(team_id, {action: 'delivery'})
-  //   console.log("I'm in askToDeliver")
-  //   if(reply){
-  //     //the reply from the other agent must contain a field type answer:String
-  //     if(reply.answer == 'yes')
-  //       //check if I have room to move from one position to another to leave there the parcels
-  //       this.belief_set.accessible_tiles.filter((tiles)=>{
-  //         if( distance(tiles, me)==1 )
-  //           return true
-  //         return false
-  //       }))
-  //       //1.put down
-  //       //2.move to that tile
-  //       console.log("I can move daddy")
-
-  //   }
-
-  // }
 
   testAskDeliver(){
     const client = this.#belief_set.client

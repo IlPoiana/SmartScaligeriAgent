@@ -10,14 +10,11 @@ plan_library.belief_set = belief_set;
 const my_agent = new IntentionRevisionRevise(plan_library);
 
 belief_set.onReady(() => {
-    // console.log("battimi: ",belief_set.me)
-    // console.log("Beliefset is ready with map:", belief_set.original_map);
-    // console.log("Accessible tiles:", belief_set.accessible_tiles);
+
     console.log("my_agent: ",my_agent.belief_set.me);
     my_agent.loop();
 })
 
-// belief_set.onParcelSensing(async (val) => await my_agent.push(val),async (parcel) => await my_agent.pickUpNotScheduledParcel(parcel));
 belief_set.onParcelSensingOld(async (val) => await my_agent.push(val));
 
 

@@ -212,7 +212,6 @@ export class Beliefset {
                 if(!p.carriedBy && p.x == this.#me.x && p.y == this.#me.y){
                     const format_p = {data:p,timedata:{startTime: now / 1e3,elapsed: p.reward}};
                     await checkCallback(format_p);
-                    // console.log("response: ",response);
                 }
             }
         })
@@ -229,7 +228,6 @@ export class Beliefset {
         })
     }
 
-    //refers to the tiles maps: accessible_tiles(modified runtime), original_map, delivery_map
     onMap(){
         this.#client.onMap((width, height, tiles) => {
             this.#accessible_tiles = removeWalls(tiles);
@@ -244,7 +242,6 @@ export class Beliefset {
 
     onAgentsSensing() {
         this.#client.onAgentsSensing( ( sensed_agents ) => {
-            // console.log("sensing agents");
             if(sensed_agents.length != 0){
                 for ( const a of sensed_agents)
                     if(a.id != this.#me.id) this.#agents.set(a.id, a);

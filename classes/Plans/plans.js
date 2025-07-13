@@ -5,10 +5,9 @@ export class PlanLibrary {
     #plans = [];
     #belief_set;
     constructor(){
-        // this.#plans.push( GoPickUp )
+
         this.#plans.push( BFSMove )
-        // this.#plans.push( Delivery)
-        // this.#plans.push( Wandering)
+
         this.#plans.push( PickUp)
         this.#plans.push( PutDown)
         this.#plans.push( Idle)
@@ -22,7 +21,6 @@ export class PlanLibrary {
     }
 
     multiAgentPlans(){
-        // this.addPlan( MultiDelivery)
         this.addPlan( TunnelDelivery )
         this.addPlan( OnlyDelivery )
         this.addPlan( MultiWandering )
@@ -56,7 +54,6 @@ export class PlanLibrary {
 class Plan {
     #belief_set;
 
-    //Remove--
     set belief_set( belief_set ){
         this.#belief_set = belief_set
     }
@@ -64,7 +61,7 @@ class Plan {
     get belief_set(){
         return this.#belief_set
     }
-    //-------
+
 
 
     // This is used to stop the plan
@@ -150,7 +147,6 @@ class GoPickUp extends Plan {
 
     async execute ( go_pick_up, x, y ) {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
-            // console.log("BFSMove: ", this.belief_set.me);
             let at_destination = await this.subPlan( BFSMove, ['go_to', x, y], this.belief_set );
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             if(at_destination)
@@ -173,16 +169,13 @@ class BFSMove extends Plan {
 
     async execute ( go_to, x, y ) {
         const me = this.belief_set.me;
-        // console.log("BFSMove me: ", this.belief_set.me);
         if ( this.stopped ) {return false;};
         let path = BFS([me.x,me.y], [x,y], this.belief_set.accessible_tiles)
-        // console.log("finished BFS", me,path);
         if(path){
             if(path.length > 1){
                 for ( let i = 1; i < path.length; i++ ) {
                     if ( this.stopped ) {return false;};
                     const next_tile = path[i];
-                    // let before_acc_map = this.belief_set.accessible_tiles;
                     if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
                         return this.subPlan( BFSMove,['go_to', x, y], this.belief_set);
                     }
@@ -190,10 +183,7 @@ class BFSMove extends Plan {
                     let result = await move(me, next_tile, this.belief_set.client);
                     if(result == false){
 
-                        // console.log("move",[me.x,me.y],"to",next_tile ,"failed!", this.belief_set.accessible_tiles.length, "before map:",before_acc_map.length);
-                        // console.log("next_tile present?: ", this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}))
-                        
-                        // console.log(await move(me, next_tile, this.belief_set.client));
+
                         console.log("tile probably blocked, removing it from the accessible tiles", me.x, me.y, [x,y]);
                         this.belief_set.accessible_tiles = this.belief_set.accessible_tiles.filter((tile) => {return tile.x !== next_tile.x || tile.y !== next_tile.y})
                         //wait half a second to have an updated belief_set
@@ -233,7 +223,6 @@ class DeliveryForgot extends Plan {
             const me = this.belief_set.me;
             if ( this.stopped ) {return false;}
             let path = nearestDeliveryTile(me.x,me.y, this.belief_set.delivery_map, this.belief_set.accessible_tiles)
-            // console.log("delivery", path);
             if(path && path.length > 1)
                 for ( let i = 0; i < path.length; i++ ) {
                     if ( this.stopped ) {return false;};
@@ -311,7 +300,6 @@ class Delivery extends Plan {
                             console.log("next tile not available, switching delivery tile");
                             put_down = false;
                             break;
-                            // return await this.subPlan(Delivery, ['delivery'], this.belief_set);
                         }
 
                         let result = await move(me, next_tile, this.belief_set.client);
@@ -408,13 +396,11 @@ class WanderingFurthest extends Plan {
     }
     //CHANGE, missing the smarter usage of the generated path
     async execute ( desire ) {
-        // console.log("in wandering",this.belief_set.me);
         const me = this.belief_set.me;
         let target_x; let target_y;
         let path;
         try{
             [target_x, target_y] = wandering(me,this.belief_set.accessible_tiles); 
-            // console.log(me,target_x,target_y, this.belief_set.accessible_tiles);
             if ( this.stopped ) {return false;}
         
             path = BFS([me.x,me.y],[target_x, target_y],this.belief_set.accessible_tiles);
@@ -436,7 +422,6 @@ class WanderingFurthest extends Plan {
                 await move(me, next_tile, this.belief_set.client);
             }
         else{
-            // console.log("accessible tiles", this.belief_set.accessible_tiles, [target_x, target_y], me, path);
             console.log("not able to go", [target_x, target_y], me, path)
             await this.subPlan(Idle,['wait'],this.belief_set);
 
@@ -537,8 +522,7 @@ class MultiDelivery extends Plan {
      * @returns 
      */
     async execute ( delivery, reward ,tile_list) {
-        // console.log("in multi delivery: ",delivery, reward, tile_list[0]);
-        // process.exit();
+
         const me = this.belief_set.me;
         let target_x; let target_y;
         let path;
@@ -636,8 +620,7 @@ class TunnelDelivery extends Plan {
      * @returns 
      */
     async execute ( delivery, reward ,tile_list, callbacks) {
-        // console.log("in multi delivery: ",delivery, reward, tile_list[0]);
-        // process.exit();
+
         console.log("in Tunnel delivery: ", this.team_position);
         const me = this.belief_set.me;
         let target_x; let target_y;
@@ -755,8 +738,7 @@ class MultiWandering extends Plan{
      * @returns 
      */
     async execute ( wandering, tile_list ) {
-        // console.log("in wandering",tile_list);
-        // process.exit()
+
         const me = this.belief_set.me;
         let target_x; let target_y;
         let target_array = [];
@@ -800,7 +782,6 @@ class MultiWandering extends Plan{
                 continue;       
             }
             else {
-                // console.log("accessible tiles", this.belief_set.accessible_tiles, [target_x, target_y], me, path);
                 console.log("not able to go", [target_x, target_y], me, path);
                 fail_counter--;
             }
@@ -888,7 +869,6 @@ class BFSToFriend extends Plan{
 
     async execute ( go_pick_up, x, y) {
         const me = this.belief_set.me;
-            // console.log("BFSMove me: ", this.belief_set.me);
             if ( this.stopped ) {return false;};
             let path = BFS([me.x,me.y], [x,y], this.belief_set.original_map)
             console.log("path to friend", path);
@@ -899,7 +879,6 @@ class BFSToFriend extends Plan{
                     for ( let i = 1; i < path.length; i++ ) {
                         if ( this.stopped ) {return false;};
                         const next_tile = path[i];
-                        // let before_acc_map = this.belief_set.accessible_tiles;
                         if(this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}).length == 0){
                             return this.subPlan( BFSMove,['go_to', x, y], this.belief_set);
                         }
@@ -907,10 +886,7 @@ class BFSToFriend extends Plan{
                         let result = await move(me, next_tile, this.belief_set.client);
                         if(result == false){
 
-                            // console.log("move",[me.x,me.y],"to",next_tile ,"failed!", this.belief_set.accessible_tiles.length, "before map:",before_acc_map.length);
-                            // console.log("next_tile present?: ", this.belief_set.accessible_tiles.filter((tile) => {return tile.x == next_tile.x && tile.y == next_tile.y}))
-                            
-                            // console.log(await move(me, next_tile, this.belief_set.client));
+
                             console.log("tile probably blocked, removing it from the accessible tiles", me.x, me.y, [x,y]);
                             this.belief_set.accessible_tiles = this.belief_set.accessible_tiles.filter((tile) => {return tile.x !== next_tile.x || tile.y !== next_tile.y})
                             //wait half a second to have an updated belief_set
@@ -965,22 +941,6 @@ class FriendPickUpAndDelivery extends Plan {
     }
 }
 
-/*
-stuck situation=>
-    the one with the parcel:
-    1 check if my friend can reach a delivery tile -> send msg1
-    2 meet -> send msg2
-        3 if I have a free tile near me, I drop -> move and wait for the friend acknowledgement
-        4 If not, I say to the friend to move ->  msg3
-        5 nobody can move, wait and repeat
-    When my friend have took the parcel, I came back to wandering 
-    The one to deliver:
-    listen for meet request: -> wait msg1
-    1 Stop the intention loop
-        2 wait until my friend is near me-> wait msg2(take my parcel and deliver)
-        3 listen if I have to move -> msg3 (move 1 tile away)
-    4 move-pickup-and deliver at all costs
-*/
 
 /**
  * This is the Plan to Exchange, it should handle the case of bringing and waiting
@@ -1054,11 +1014,6 @@ class Exchange extends Plan{
 }
 
 
-/*
-DO WE NEED THESE CLASSES
-_----------------------------------------------------------------
-*/
-
 class MultiGoPickUp extends Plan{
 
     constructor(parent, belief_set){
@@ -1071,7 +1026,6 @@ class MultiGoPickUp extends Plan{
 
     async execute ( go_pick_up, x, y ) {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
-            // console.log("BFSMove: ", this.belief_set.me);
             let at_destination = await this.subPlan( BFSMove, ['go_to', x, y], this.belief_set );
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
             if(at_destination)

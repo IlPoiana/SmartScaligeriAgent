@@ -12,7 +12,6 @@ export class Intention{
         return this.#stopped;
     }
     stop () {
-        // this.log( 'stop intention', ...this.#predicate );
         this.#stopped = true;
         if ( this.#current_plan)
             this.#current_plan.stop();
@@ -89,7 +88,6 @@ export class Intention{
         if ( this.stopped ) throw [ 'stopped intention', ...this.predicate ];
 
         // no plans have been found to satisfy the intention
-        // this.log( 'no plan satisfied the intention ', ...this.predicate );
         throw ['no plan satisfied the intention ', ...this.predicate ]
     }
 
@@ -177,7 +175,6 @@ export class IntentionRevision {
             if(parcel.timedata.elapsed <= 0){
                 this.belief_set.parcels.delete(parcel.data.id);}
         });
-        // parcels.forEach((parcel) => console.log(parcel.data, parcel.timedata.elapsed))
     }
     
     async loop ( ) {
@@ -241,25 +238,4 @@ export class IntentionRevision {
 
 }
 
-/*
-missing the carried parcel decay penalty, add as a separate feature
-Replan function
-form a belief_set -> plan and execute 
-a flag will tell me if I should replan, so break the plan and call a new plan
-finally set a Timeout for the replan flag
 
-idea rn:
-1. start with std. wandering loop, until you want to pick_up more than n parcels(5 ex)
-2. when the condition is met, switch to the planner, plan the intention to execute
-3. execute the plan
-    3.1 replan when a better parcel is encounter(set a timeout before replanning)
-    3.2 replan when the parcel has decayed or taken from another agent(set a timeout before replanning)
-    3.3 switch back to normal if a plan completely fail(set timeout before replanning)
-4. come back to wandering
-
-modify the push function while looping through the plan
-- if I spot a better parcel than the one I am going to take -> replan
-    - wait at least 2 seconds before replanning
-- otherwise ignore everything else
-
-*/

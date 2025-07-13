@@ -2,7 +2,6 @@
 import { distance, BFS, nearestDeliveryTile } from '../../agents/lib/algorithms.js'
 import { IntentionRevision, Intention } from './intention.js'
 
-// the actual steps to reach destination should account for a little computation time
 
 /**
  * Class which implements the push method that performs the revise of the intention queue
@@ -21,13 +20,11 @@ export class IntentionRevisionRevise extends IntentionRevision {
         if(!parcel)
             return 0;
         //quando arriva delivery diventa undefined
-        // let computed_reward = reward -  distance({x:x1,y:y1},{ x:parcel.data.x, y:parcel.data.y}) / 2;
         let my_position = this.belief_set.me;
         let parcel_position = { x:parcel.data.x, y:parcel.data.y};
         let abs_distance = distance(my_position,parcel_position) > 0 ? distance(my_position,parcel_position) : 1;
         let computed_reward = (1 / (abs_distance * (1000/ this.belief_set.settings.movement))) * 1000;
-        // console.log("CHECK reward- id:", predicate[3],computed_reward);
-        // console.log("CHECK 1",computed_reward, abs_distance, settings.movement);
+
         return computed_reward < 0 ? 0 : computed_reward;
     }
 
@@ -38,7 +35,6 @@ export class IntentionRevisionRevise extends IntentionRevision {
             case 'go_pick_up':
                 let parcel_reward = (this.belief_set.getParcel(predicate[3])).timedata.elapsed;
                 const final_reward = this.parcelRewardFun(predicate) + parcel_reward
-                // console.log("CHECK 2",predicate,parcelRewardFun(predicate, my_position),parcel_reward,final_reward);
                 return final_reward > 1 ? final_reward : 2;
                 break;
             case 'delivery':
@@ -64,7 +60,6 @@ export class IntentionRevisionRevise extends IntentionRevision {
             case 'go_pick_up':
                 const parcel_id = intention.predicate[3];
                 if(!this.belief_set.getParcel( parcel_id ) || this.rewardFun(intention.predicate) < 1){
-                    // console.log(parcels.get(parcel_id), intention.predicate[4]);
                     return true;
                 }
                 return false;
@@ -84,10 +79,9 @@ export class IntentionRevisionRevise extends IntentionRevision {
         }
         this.intention_queue.forEach((intention, index) => {
             if(this.checkIntention(intention)){
-                // console.log("CHECK CLEANING: ", intention.predicate,this.current_intention.predicate);
                 if(this.current_intention && intention.predicate[3] == this.current_intention.predicate[3]){
                     this.current_intention.stop();
-                    console.log("stopping intention: ", intention.predicate);//doesn't work
+                    console.log("stopping intention: ", intention.predicate);
                 }
                     
                 this.intention_queue = this.intention_queue.filter((others) => {return others.predicate.join(' ') != intention.predicate.join(' ')});
@@ -117,7 +111,6 @@ export class IntentionRevisionRevise extends IntentionRevision {
         }
         
         if(this.intention_queue.length == 0){
-            // console.log("queue 0: ", predicate, this.belief_set.parcels)
             this.intention_queue.push(new Intention( this, predicate, this.plans, this.belief_set ));
             
             if(this.belief_set.getParcel(predicate[3])){
@@ -132,7 +125,6 @@ export class IntentionRevisionRevise extends IntentionRevision {
                     this.intention_queue.push(new Intention( this, this.current_intention.predicate, this.plans, this.belief_set));
                     this.current_intention.stop();                    
                 }
-                // console.log("CHECK 0 pushing delivery", reward);
                 await this.push(['delivery', Math.round(reward / 2)]);
             }    
             return;
@@ -155,7 +147,6 @@ export class IntentionRevisionRevise extends IntentionRevision {
                 }
                 break;
             case 'go_pick_up':
-                // console.log("go_pick_up: ",this.belief_set.parcels);
                 if(this.belief_set.getParcel(predicate[3])){
                     let delivery_reward = this.rewardFun(predicate); // >= 1
                     let new_intention = new Intention(this, predicate, this.plans, this.belief_set );
@@ -174,9 +165,7 @@ export class IntentionRevisionRevise extends IntentionRevision {
                     }
 
                     this.intention_queue.sort((a, b) =>{
-                        // if(a[3] && b[3])
                         return this.rewardFun(a.predicate) - this.rewardFun(b.predicate) 
-                        // else return 0;
                     })
                     this.intention_queue.reverse();
                     //leave wandering as soon you detect a parcel or a better parcel than the one that I'm going to pick up
@@ -221,10 +210,7 @@ export class IntentionRevisionRevise extends IntentionRevision {
                     nearestDeliveryTile(parcel.data.x,parcel.data.y,this.belief_set.delivery_map, accessible_tiles).length
                     );
                 } catch(err){
-                    // console.log("not possible to do BFS in validating the intention: ", err);
-                    // console.log("maps",this.belief_set.accessible_tiles,this.belief_set.agents);
-                    // console.log("how many tiles are removed?: ",this.belief_set.original_map.length -  this.belief_set.accessible_tiles.length )
-                    // process.exit()//REMOVE
+
                     console.log("BFS not found any path in isValid");
                     return false;
                 }
@@ -249,9 +235,7 @@ export class IntentionRevisionRevise extends IntentionRevision {
                     console.log("not able to do BFS in isValid: ", err);
                     return false;
                 }
-                // console.log("isValid: ",my_id, this.belief_set.parcels);
                 this.belief_set.parcels.forEach((parcel) => {
-                    // console.log("isValid carriedBy: ", parcel.data.carriedBy);
                     if(parcel.data.carriedBy == my_id) {
                         //if i have a decay not infinite
                         if(steps_number){

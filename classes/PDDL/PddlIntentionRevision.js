@@ -322,28 +322,12 @@ class PlanBeliefSet {
 
     async oldplan(){
     
-        /*problem declaration
-        1. belief_set initialization
-        2. goal description
-        */
     
         const parcels = this.parcels;
         let accessible_tiles = this.accessible_tiles;
         let delivery_tiles = this.delivery_map;
         const me = this.me;
         const adjcency_map = this.pddl_adjacent_map();
-    
-        //uncomment for cost threshold
-        // let threshold_cost = 0;
-        // parcels.forEach((parcel) => {
-        //     threshold_cost += distance(me, parcel.data) * 2 * parcels.size
-        // })
-
-        /* Beliefset delcaration-in my case:
-        1. all the accessible tiles
-        2. all the parcels not picked up
-        3. all the delivery tiles
-        */
     
     
         const myBeliefset = new PddlBeliefset();
@@ -361,11 +345,7 @@ class PlanBeliefSet {
         //parcels
         let p_count = 0;
         let goals = 'and';
-        //un comment for final version
-        // parcels.forEach(parcel => {
-        //     myBeliefset.declare( `at-parcel ${parcel.id} location-${parcel.data.x}-${parcel.data.y}` );    
-        //     p_count++;
-        // })
+
         parcels.forEach(parcel => {
             if(parcel.data && parcel.data.id && parcel.data.x && parcel.data.y)
             {myBeliefset.declare( `at-parcel ${parcel.data.id} loc-${parcel.data.x}-${parcel.data.y}` );    
@@ -377,16 +357,13 @@ class PlanBeliefSet {
         })
         myBeliefset.addObject('- parcel');
         let cost = 0;
-        //comment for std. domain
-        //-----------------------
+
         parcels.forEach((parcel) => {
             myBeliefset.addFact(`= (cost ${parcel.data.id}) ${parcel.cost}`)
             cost += parcel.cost;
         })
         myBeliefset.addFact(`= (sum-undelivered-cost) ${cost}`)
-        //-----------------------
-        //uncomment for std. domain
-        // myBeliefset.addFact(`= (num-undelivered) ${p_count}`);
+
     
         delivery_tiles.forEach((tile, idx) => {
             myBeliefset.declare(`at-tile t${idx} loc-${tile.x}-${tile.y}`);
@@ -398,22 +375,7 @@ class PlanBeliefSet {
         adjcency_map.forEach((predicate,k) => {
             myBeliefset.addFact(predicate);
         })
-    
-        // myBeliefset.addFact('= (total-cost) 0');
-    
-        // console.log("CHECK 1:",myBeliefset.toPddlString());
-        // console.log("CHECK 2, goals: ", goals);
-        
-        // var pddlProblem = new MetricPddlProblem(
-        //     'parcel-delivery',
-        //     'SSA',
-        //     myBeliefset.objects.join(' '),
-        //     myBeliefset.toPddlString(),
-        //     goals,
-        //     'minimize (total-cost)'
-        // )
 
-        // goals += `(< (total-cost) ${threshold_cost})`;
 
         var pddlProblem = new MetricPddlProblem(
             'parcel-delivery',
@@ -429,36 +391,24 @@ class PlanBeliefSet {
         console.log( problem );
         
         //domain file
-        // let domain = await readFile('./domain.pddl' );
         let domain = await readFile('./cost-domain.pddl' );
         console.log(domain);
-        // process.exit(0);
+
         
         var plan = await onlineSolver( domain, problem );
         console.log(plan);
         return plan;
-        // const pddlExecutor = new PddlExecutor( { name: 'lightOn', executor: (l) => console.log('executor lighton '+l) } );
-        // pddlExecutor.exec( plan );
+
     
     }
 
     async plan(){
-    
-        /*problem declaration
-        1. belief_set initialization
-        2. goal description
-        */
+
     
         const parcels = this.parcels;
         let delivery_tiles = this.delivery_map;
         const me = this.me;
-        
-        /* Beliefset delcaration-in my case:
-        1. all the accessible tiles
-        2. all the parcels not picked up
-        3. all the delivery tiles
-        */
-    
+
     
         const myBeliefset = new PddlBeliefset();
         const location_array = [];

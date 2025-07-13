@@ -3,16 +3,7 @@ import { Communication } from "../Coordination/Communication.js";
 import { PlanLibrary } from "../Plans/plans.js";
 import { IntentionRevisionRevise } from "./IntentionRevisionRevise.js";
 import { Intention } from "./intention.js";
-/*
-1. implement multi wandering - delivery - goPickUp
-    Put a limit to the tiles to divide to not destroy the net
-    1.1 decide if keep delivery with threshold or change with insisting on delivery tiles
-    1.2 decide if return subPlan ddelivery because you have to change the predicate!!
-2. implement exchange
-    2.1 test exhange alone
-3. put together
 
-*/
 
 export class MultiIntentionRevisionRevise extends IntentionRevisionRevise {
     
@@ -177,7 +168,6 @@ export class MultiIntentionRevisionRevise extends IntentionRevisionRevise {
     }
 
     async getTilesFromMaster(){
-        // console.log("TO TEST");
         return new Promise((res) => {
             this.belief_set.client.once( "msg", (id, name, msg, reply)=>{
                 if(msg && msg.status){
@@ -224,7 +214,6 @@ export class MultiIntentionRevisionRevise extends IntentionRevisionRevise {
     }
 
     async listenerTilesFromMaster(){
-        // console.log("TO TEST");
         return this.belief_set.client.once( "msg", (id, name, msg, reply)=>{
                 if(msg && msg.status){
                     let answer;
@@ -421,10 +410,8 @@ export class MultiIntentionRevisionRevise extends IntentionRevisionRevise {
             this.updateElapsed();
             this.cleanIntentions();
         }
-        // console.log("here!", this.#delivery_tiles, this.#spawning_tiles);
-        // console.log("pushMulti", this.#friend_believe_set.team_data);
+
         if(this.intention_queue.length == 0){
-            // console.log("queue 0: ", predicate, this.belief_set.parcels)
             this.intention_queue.push(new Intention( this, predicate, this.plans, this.belief_set ));
             
             if(this.belief_set.getParcel(predicate[3])){
@@ -439,7 +426,6 @@ export class MultiIntentionRevisionRevise extends IntentionRevisionRevise {
                     this.intention_queue.push(new Intention( this, this.current_intention.predicate, this.plans, this.belief_set));
                     this.current_intention.stop();                    
                 }
-                // console.log("CHECK 0 pushing delivery", reward);
                 await this.pushMulti(['delivery', Math.round(reward / 2), this.#delivery_tiles,[
                     async() =>{return await this.meetRequest()},
                     async(me) => {return await this.askFriendPickUpMsg(me)},
@@ -465,7 +451,6 @@ export class MultiIntentionRevisionRevise extends IntentionRevisionRevise {
                 }
                 break;
             case 'go_pick_up':
-                // console.log("go_pick_up: ",this.belief_set.parcels);
                 if(this.belief_set.getParcel(predicate[3])){
                     let delivery_reward = this.rewardFun(predicate); // >= 1
                     let new_intention = new Intention(this, predicate, this.plans, this.belief_set );
@@ -484,9 +469,7 @@ export class MultiIntentionRevisionRevise extends IntentionRevisionRevise {
                     }
 
                     this.intention_queue.sort((a, b) =>{
-                        // if(a[3] && b[3])
                         return this.rewardFun(a.predicate) - this.rewardFun(b.predicate) 
-                        // else return 0;
                     })
                     this.intention_queue.reverse();
                     //leave wandering as soon you detect a parcel or a better parcel than the one that I'm going to pick up
@@ -532,18 +515,9 @@ export class MultiIntentionRevisionRevise extends IntentionRevisionRevise {
                 return parcel && !parcel.carriedBy; 
                 break;
             case 'delivery':
-                //deliver only if you arrive to the delivery tile on time
                 let counter = 0;
-                // try{
-                //     actual_steps = nearestDeliveryTile(me.x,me.y,this.belief_set.delivery_map, accessible_tiles).length;}
-                // catch(err){
-                //     //here to do the managment of the delivery with comunication
-                //     console.log("not able to do BFS in isValid: ", err);
-                //     return false;
-                // }
-                // // console.log("isValid: ",my_id, this.belief_set.parcels);
+            
                 this.belief_set.parcels.forEach((parcel) => {
-                    // console.log("isValid carriedBy: ", parcel.data.carriedBy);
                     if(parcel.data.carriedBy == my_id) {    
                         counter++;
                     }
