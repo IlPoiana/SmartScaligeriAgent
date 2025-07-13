@@ -1,8 +1,3 @@
-// 'https://https://planner.cavic-fam.it';
-
-// process.env.PAAS_HOST = 'https://planner.cavic-fam.it';
-// process.env.PAAS_PATH = '/package/dual-bfws-ffparser/solve';
-
 import { Beliefset } from "../classes/Beliefs/belief.js";
 import { PddlIntentionRevision } from "../classes/PDDL/PddlIntentionRevision.js";
 import { PlanLibrary } from "../classes/Plans/plans.js";

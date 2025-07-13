@@ -1,29 +1,23 @@
 # SmartScaligeriAgent
 Repository for the 2025 AutonomusSoftwareAgents course project
 
-### Useful info
-- `tile.type`: there are three kinds of tiles:
-  - 0: wall
-  - 1: green-spawining tile
-  - 2: delivery zone
-  - 3: path
-
 
 A simple Node.js agent that connects to a Planning-as-a-Service (PaaS) backend running in Docker and solves PDDL planning problems.
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)  
-2. [Installation](#installation)  
-3. [Running the Planning Service (Docker)](#running-the-planning-service-docker)  
-   - [Pull a Published Image](#pull-a-published-image)  
-   - [Build Locally](#build-locally)  
-   - [Run the Container](#run-the-container)  
-4. [Running the Agent](#running-the-agent)  
-5. [Development & Debugging](#development--debugging)  
-6. [Troubleshooting](#troubleshooting)  
-7. [Contributing](#contributing)  
-8. [License](#license)  
+- [SmartScaligeriAgent](#smartscaligeriagent)
+  - [Table of Contents](#table-of-contents)
+  - [Setup](#setup)
+    - [1. Prerequisites](#1-prerequisites)
+    - [2. Installation](#2-installation)
+    - [3. Running the Planning Service (Docker - PDDL agent only)](#3-running-the-planning-service-docker---pddl-agent-only)
+      - [Run the Container](#run-the-container)
+    - [4. Run the agents](#4-run-the-agents)
+      - [API setup](#api-setup)
+      - [single agent](#single-agent)
+      - [PDDL extension](#pddl-extension)
+      - [multi-agent](#multi-agent)
 
 ## Setup
 
