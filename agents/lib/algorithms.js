@@ -143,9 +143,9 @@ function nearestSpawningTile(x,y,spawning_map,map){
 
 /**
  * 
- * @param {*} start 
- * @param {*} target 
- * @param {*} map 
+ * @param {*} start: a two elements array [x,y]
+ * @param {*} target: a two elements array [x,y]
+ * @param {*} map: a list of tiles [{x,y},{x,y}]
  * @returns an array of lenght 1 if my position has already been achieved, `null` if no path have been found
  */
 function BFS(start,target,map){

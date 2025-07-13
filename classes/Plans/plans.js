@@ -958,7 +958,6 @@ class FriendPickUpAndDelivery extends Plan {
         let at_destination = await this.subPlan( BFSMove, ['go_to', x, y], this.belief_set );
         if(at_destination)
                 await this.subPlan(PickUp, ['pick_up'], this.belief_set);
-        console.log("Forse qui si romperà, prima di reply");
         reply();
         await this.subPlan( OnlyDelivery, ['only_delivery'],this.belief_set);
         this.belief_set.idle = false;

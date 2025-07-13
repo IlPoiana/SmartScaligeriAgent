@@ -81,11 +81,9 @@ export class Communication{
   }
 
   async onAsk(msg){
-    console.log("in ask");
     const client = this.belief_set.client
     const team_id = this.#team_id
     let reply = await client.emitAsk(team_id, msg)
-    console.log(reply)
     return reply
 
   }
@@ -217,33 +215,33 @@ export class Communication{
     
   }
 
-  /**
-   * method to be called if sensed a parcel but the BFS return a false because
-   * can't deliver, then I'll ask to the companion to do the action
-   */
-  askToDeliver(){
-    const client = this.#belief_set.client
-    const team_id = this.#companion_id
-    const me = this.#belief_set.me
+  // /**
+  //  * method to be called if sensed a parcel but the BFS return a false because
+  //  * can't deliver, then I'll ask to the companion to do the action
+  //  */
+  // askToDeliver(){
+  //   const client = this.#belief_set.client
+  //   const team_id = this.#companion_id
+  //   const me = this.#belief_set.me
 
-    let reply = client.emitAsk(team_id, {action: 'delivery'})
-    console.log("I'm in askToDeliver")
-    if(reply){
-      //the reply from the other agent must contain a field type answer:String
-      if(reply.answer == 'yes')
-        //check if I have room to move from one position to another to leave there the parcels
-        if(this.belief_set.accessible_tiles.filter((tiles)=>{
-          if( distance(tiles, me)==1 )
-            return true
-          return false
-        }))
-        //1.put down
-        //2.move to that tile
-        console.log("I can move daddy")
+  //   let reply = client.emitAsk(team_id, {action: 'delivery'})
+  //   console.log("I'm in askToDeliver")
+  //   if(reply){
+  //     //the reply from the other agent must contain a field type answer:String
+  //     if(reply.answer == 'yes')
+  //       //check if I have room to move from one position to another to leave there the parcels
+  //       this.belief_set.accessible_tiles.filter((tiles)=>{
+  //         if( distance(tiles, me)==1 )
+  //           return true
+  //         return false
+  //       }))
+  //       //1.put down
+  //       //2.move to that tile
+  //       console.log("I can move daddy")
 
-    }
+  //   }
 
-  }
+  // }
 
   testAskDeliver(){
     const client = this.#belief_set.client

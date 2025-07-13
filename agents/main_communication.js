@@ -94,75 +94,7 @@ belief_set.onReady(async () => {
 
     
     
-    // my_agent.communication.handShaking().catch((err) => console.log("error in handshaking", err));
     
 })
 
-
-// belief_set.onReady(async () => {
-    
-//     //send the array(possibly a decorator of handshaking)
-//     if(my_agent.belief_set.me.name == 'ema')  {
-//         my_agent.belief_set.me.role = 'MASTER'
-//         await my_agent.computeAndSendTiles();//assign to the master the tiles and send to the slave it's tiles
-//         my_agent.communication.emitter.once('listener-ready', () => {
-//             //master handshake
-//             console.log("here!");
-//             my_agent.communication.handShaking().catch((err) => console.log("error in handshaking", err));
-
-//         })
-//         // my_agent.communication.emitter.emit('listener-ready');
-
-//         console.log("set the listener to master");
-//         my_agent.communication.emitter.once('master-handshake',() => {
-//             belief_set.client.onYou(async() => {
-//                 const update_slave = await comm.updateTeam()
-//                 // console.log("slave res", update_slave);
-//                 // console.log("update result:",await comm.updateTeam());
-//             })
-
-        
-//             console.log("friend believe set:", my_agent.friend_belive_set.team_data)
-//             my_agent.meetingMsgHandler()
-            
-//             console.log("starting loop");
-//             my_agent.loop();
-
-
-//             belief_set.onParcelSensingOld(async (val) => {
-//                 await my_agent.pushMulti(val)
-//                 // console.log("my companion: ", multi_agent_belief.team_data)
-//             });
-//         })
-//     }
-//     else{
-//         my_agent.belief_set.me.role = 'SLAVE'
-//         await my_agent.getTilesFromMaster();
-//         console.log("set the listener to slave");
-//         my_agent.communication.emitter.once('slave-handshake',() => {
-//             belief_set.client.onYou(async() => {
-//                 const update_slave = await comm.updateTeam()
-//                 // console.log("slave res", update_slave);
-//                 // console.log("update result:",await comm.updateTeam());
-//             })
-
-        
-//             console.log("friend believe set:", my_agent.friend_belive_set.team_data)
-//             my_agent.meetingMsgHandler()
-            
-//             console.log("starting loop");
-//             my_agent.loop();
-
-
-//             belief_set.onParcelSensingOld(async (val) => {
-//                 await my_agent.pushMulti(val)
-//                 // console.log("my companion: ", multi_agent_belief.team_data)
-//             });
-//         })
-
-//         my_agent.communication.handShaking().catch((err) => console.log("error in handshaking", err));
-
-//     }
-    
-// })
 

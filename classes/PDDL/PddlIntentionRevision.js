@@ -121,7 +121,7 @@ class PddlBeliefset {
 
 
     /**
-     * @return {Array<String>} Return an Array of String literals (possibly negated facts) e.g. 'light_on kitchen_light' or 'not (light_on kitchen_light)'
+     * @return {*} Return an Array of String literals (possibly negated facts) e.g. 'light_on kitchen_light' or 'not (light_on kitchen_light)'
      */
     toPddlString() {
         return this.entries.map( ([fact, value]) => (value?fact:'not ('+fact+')') ).map( fact => '('+fact+')' ).join(' ')
@@ -142,7 +142,7 @@ class PddlBeliefset {
                 return true;
             else
                 return false;
-        else // Closed World assumption; if i don't know about something then it is false
+        else 
             if ( positive )
                 return false;
             else
@@ -214,7 +214,6 @@ class PlanBeliefSet {
         this.#accessible_tiles = belief_set.accessible_tiles;
         this.#distances_map = this.generateCostsMap()
         this.#steps_per_decay = belief_set.steps_per_decay;
-        // console.log(this.#parcels);
     }
 
     generateCostsMap(){
@@ -269,8 +268,11 @@ class PlanBeliefSet {
                 costs_map.push(`= (cost-of-move loc-${i_tile.x}-${i_tile.y} loc-${d_tile.x}-${d_tile.y}) ${distance(d_tile,i_tile)}`)
             })
         })
+        // average distance from my position and every parcel
         me_parcels_avg = Math.round(me_parcels_avg / parcel_n);
-        parcels_parcels_avg = Math.ceil(single_p_array.reduce((prev,curr) =>  {return prev + curr}))
+        // average distance between every pair of parcels
+        parcels_parcels_avg = Math.ceil(single_p_array.reduce((prev,curr) =>  {return prev + curr}));
+        // average distance between every parcel and delivery tile
         parcels_dtile_avg /= Math.round(parcel_n + 1);
 
         console.log("me: ", me_parcels_avg,"array: ",single_p_array,"parcels: ",parcels_parcels_avg ,"tile: ",parcels_dtile_avg);
@@ -292,7 +294,6 @@ class PlanBeliefSet {
                 copy.get(key).cost = parcel.timedata.elapsed;
             }
         })
-        // copy.forEach(parcel => console.log("cost value: ", parcel.cost))
         return copy;
     }
 
@@ -518,12 +519,10 @@ class PlanBeliefSet {
         
         
         let problem = pddlProblem.toPddlString();
-        // console.log( problem );
         
         //domain file
         let domain = await readFile('../classes/PDDL/fluents-domain.pddl' );
-        // console.log(domain);
-        // process.exit(0);
+
         try{
         var plan = await onlineSolver( domain, problem );
         // console.log(plan);
@@ -532,9 +531,7 @@ class PlanBeliefSet {
             console.log("Not able to find a plan: ", err);
             return false;
         }
-        // const pddlExecutor = new PddlExecutor( { name: 'lightOn', executor: (l) => console.log('executor lighton '+l) } );
-        // pddlExecutor.exec( plan );
-    
+
     }
 
 
@@ -582,12 +579,9 @@ export class PddlIntentionRevision extends IntentionRevisionRevise{
     }
 
     async getPlan(){
-        // console.log("CHECK 1, intention queue : ");
-        // this.intention_queue.map((intention) => console.log(intention.predicate));
+
         this.intention_queue = [];
         this.current_intention = null;
-        // console.log("CHECK 1, intention queue deleted: ");
-        // this.intention_queue.map((intention) => console.log(intention.predicate));
         
         //prepare the data
         const plan_belief_set = new PlanBeliefSet(this.belief_set);
@@ -642,63 +636,7 @@ export class PddlIntentionRevision extends IntentionRevisionRevise{
                 let n_pick_up = this.intention_queue.filter((intention) => {
                     return intention.predicate[0] == 'go_pick_up'
                 }).length
-                // if ( n_pick_up && n_pick_up >= this.N){
-                //     //change the Pddl flag to deactivate the standard push
-                //     this.#Pddl = true;
-                    
-                //     //suspend the loop execution and free the intention queue
-
-                //     console.log("CHECK 1, intention queue : ");
-                //     this.intention_queue.map((intention) => console.log(intention.predicate));
-                //     this.intention_queue = [];
-                //     this.current_intention = null;
-                //     console.log("CHECK 1, intention queue deleted: ");
-                //     this.intention_queue.map((intention) => console.log(intention.predicate));
-                    
-                //     //prepare the data
-                //     const plan_belief_set = new PlanBeliefSet(this.belief_set);
-                    
                 
-                //     //call the planner
-                //     let plan = await plan_belief_set.plan();
-        
-                //     // process.exit(0);
-                //     console.log("before executing");
-                //     //extract the plans
-                    
-                //     let GoPickUpClass = this.plans.filter((PlanClass) => {return PlanClass.isApplicableTo('go_pick_up')})[0];
-                //     let GoToClass = this.plans.filter((PlanClass) => {return PlanClass.isApplicableTo('go_to')})[0];
-                //     let PutDownClass = this.plans.filter((PlanClass) => {return PlanClass.isApplicableTo('put_down')})[0];
-                    
-                //     const GoPickUp = new GoPickUpClass(this, this.belief_set);
-                //     const GoTo = new GoToClass(this, this.belief_set);
-                //     const PutDown = new PutDownClass(this, this.belief_set);
-                    
-                //     for(let action_obj of plan){
-                //         if(action_obj.action){
-                //             const action_name = action_obj.action;
-                //             const action_arr = action_obj.args;
-                //             //pick_up
-                //             if(action_name == 'pick_up'){
-                //                 let [_,x,y] = action_arr[2].split('-');
-                //                 const p_id = action_arr[1]
-                //                 await GoPickUp.execute('go_pick_up',Number(x),Number(y))
-                //             }
-                            
-                //             //deliver
-                //             if(action_name == 'deliver'){
-                //                 let [_,x,y] = action_arr[3].split('-');
-                //                 await GoTo.execute('go_to',Number(x),Number(y));
-                //                 await PutDown.execute(['put_down']);
-                //             }
-
-                //         }
-                //     }
-                //     console.log("before exiting");
-                    
-                //     //go back to standard agent
-                //     this.#Pddl = false;
-                // }
                 if ( n_pick_up && n_pick_up >= this.N){
                     //change the Pddl flag to deactivate the standard push
                     this.#Pddl = true;
